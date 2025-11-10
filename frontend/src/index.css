@@ -1,17 +1,23 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@layer base {
+  body {
+    @apply bg-base-100 text-base-content;
+  }
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer components {
+  .sensor-card {
+    @apply bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition;
+  }
+
+  .sensor-value {
+    @apply text-3xl font-bold;
+  }
+
+  .alert-badge {
+    @apply badge badge-lg font-semibold;
+  }
 }
