@@ -17,7 +17,7 @@ const parseCorsOrigins = () => {
 module.exports = {
   host: process.env.HOST || '0.0.0.0',
   port: process.env.PORT || 3000,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv: process.env.NODE_ENV || 'production',
 
   mongodb: {
     uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/iot_monitoring',
