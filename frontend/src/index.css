@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-base-100 text-base-content;
+  }
+}
+
+@layer components {
+  .sensor-card {
+    @apply bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition;
+  }
+
+  .sensor-value {
+    @apply text-3xl font-bold;
+  }
+
+  .alert-badge {
+    @apply badge badge-lg font-semibold;
+  }
+}

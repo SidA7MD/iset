@@ -1,0 +1,21 @@
+{
+  "name": "iot-monitoring-platform",
+  "version": "1.0.0",
+  "description": "IoT Monitoring Platform - Full Stack Application",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run open:browser\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "open:browser": "wait-on http://localhost:5173 && open-cli http://localhost:5173",
+    "build": "cd frontend && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0",
+    "open-cli": "^8.0.0"
+  }
+}
