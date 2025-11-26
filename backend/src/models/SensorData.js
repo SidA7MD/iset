@@ -26,7 +26,7 @@ const sensorDataSchema = new mongoose.Schema(
     timestamp: {
       type: Date,
       default: Date.now,
-      index: true,
+      // 🔥 Removed index: true (caused duplicate)
     },
     alertTriggered: {
       type: Boolean,
