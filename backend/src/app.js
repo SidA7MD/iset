@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 
+// Routes
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const deviceRoutes = require('./routes/device.routes');
@@ -12,21 +13,20 @@ const alertRoutes = require('./routes/alert.routes');
 
 const app = express();
 
-// Load allowed origins from ENV
+// Allowed origins from env
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
 
-// Secure CORS config (required for cookies)
+console.log('Allowed origins:', allowedOrigins);
+
+// CORS FIX — must be FIRST middleware
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests without origin (mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-
+      if (!origin) return callback(null, true); // mobile, curl, postman
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-
-      return callback(new Error('Not allowed by CORS: ' + origin));
+      return callback(new Error('Blocked by CORS, origin: ' + origin));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -40,12 +40,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(compression());
 
-// Health endpoint
+// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// API routes
+// API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/devices', deviceRoutes);
