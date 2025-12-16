@@ -1,269 +1,12 @@
 // frontend/src/contexts/WebSocketContext.jsx
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import axiosInstance from '../api/axios.config';
-import websocketClient from '../services/websocketClient';
+// FIXED VERSION - Handles token expiration and auto-reconnect
+
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { io } from 'socket.io-client';
+import config from '../config';
 import { useAuth } from './AuthContext';
 
-export const WebSocketContext = createContext(null);
-
-export const WebSocketProvider = ({ children }) => {
-  const { token, isAuthenticated, isLoading } = useAuth();
-  const [isConnected, setIsConnected] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [connectionError, setConnectionError] = useState(null);
-
-  // Refs to prevent loops and race conditions
-  const hasInitialized = useRef(false);
-  const connectionTimeout = useRef(null);
-  const cleanupFunctions = useRef([]);
-  const isMounted = useRef(true);
-
-  // Helper: try to refresh access token
-  const tryRefreshToken = useCallback(async () => {
-    try {
-      console.log('🔄 Attempting token refresh...');
-      const resp = await axiosInstance.post('/auth/refresh', {}, { withCredentials: true });
-      const newToken = resp?.data?.data?.accessToken || resp?.data?.accessToken;
-      if (newToken) {
-        console.log('✅ Token refreshed successfully');
-        localStorage.setItem('accessToken', newToken);
-        return newToken;
-      }
-      console.warn('⚠️ Token refresh returned no token');
-      return null;
-    } catch (err) {
-      console.error('❌ Token refresh failed:', err.message);
-      return null;
-    }
-  }, []);
-
-  // Main connection setup
-  useEffect(() => {
-    // Mark as mounted
-    isMounted.current = true;
-
-    // Wait for auth to load
-    if (isLoading) {
-      console.log('⏳ Waiting for auth to load...');
-      return;
-    }
-
-    // Not authenticated - don't connect
-    if (!isAuthenticated || !token) {
-      console.log('⚠️ Not authenticated, skipping WebSocket');
-      setIsReady(true);
-      return;
-    }
-
-    // Already initialized - don't re-initialize
-    if (hasInitialized.current) {
-      console.log('✅ WebSocket already initialized');
-      return;
-    }
-
-    console.log('🔌 Initializing WebSocket connection...');
-    hasInitialized.current = true;
-
-    // Set connection timeout
-    connectionTimeout.current = setTimeout(() => {
-      if (isMounted.current && !isConnected) {
-        console.error('❌ Connection timeout (10s)');
-        setConnectionError('Connection timeout. Server may be unreachable.');
-        setIsReady(true);
-      }
-    }, 10000);
-
-    try {
-      // Connect to WebSocket
-      websocketClient.connect(token);
-
-      // Handle successful connection
-      const unsubConnect = websocketClient.on('connect', () => {
-        if (!isMounted.current) return;
-
-        console.log('✅ WebSocket connected');
-        setIsConnected(true);
-        setConnectionError(null);
-        setIsReady(true);
-
-        if (connectionTimeout.current) {
-          clearTimeout(connectionTimeout.current);
-          connectionTimeout.current = null;
-        }
-      });
-      cleanupFunctions.current.push(unsubConnect);
-
-      // Handle disconnection
-      const unsubDisconnect = websocketClient.on('disconnect', (reason) => {
-        if (!isMounted.current) return;
-
-        console.log('❌ WebSocket disconnected:', reason);
-        setIsConnected(false);
-
-        // Only show error for unexpected disconnections
-        if (reason !== 'io client disconnect' && reason !== 'client namespace disconnect') {
-          console.warn('⚠️ Unexpected disconnection:', reason);
-        }
-      });
-      cleanupFunctions.current.push(unsubDisconnect);
-
-      // Handle connection errors
-      const unsubConnectError = websocketClient.on('connect_error', async (err) => {
-        if (!isMounted.current) return;
-
-        console.error('❌ WebSocket connection error:', err?.message || err);
-        setIsReady(true);
-
-        const errMsg = String(err?.message || err || '');
-
-        // Handle token expiration
-        if (/expired|token/i.test(errMsg)) {
-          console.log('🔑 Token issue detected, attempting refresh...');
-          const newToken = await tryRefreshToken();
-
-          if (newToken && isMounted.current) {
-            console.log('✅ Token refreshed, reconnecting...');
-            // Let socket.io handle reconnection with new token
-            websocketClient.disconnect();
-            hasInitialized.current = false;
-            setTimeout(() => {
-              if (isMounted.current) {
-                websocketClient.connect(newToken);
-              }
-            }, 1000);
-          } else {
-            console.error('❌ Token refresh failed');
-            setConnectionError('Session expired. Please log in again.');
-            localStorage.removeItem('accessToken');
-          }
-          return;
-        }
-
-        // Generic connection error
-        setConnectionError(errMsg || 'Failed to connect to server');
-
-        if (connectionTimeout.current) {
-          clearTimeout(connectionTimeout.current);
-          connectionTimeout.current = null;
-        }
-      });
-      cleanupFunctions.current.push(unsubConnectError);
-
-      // Handle generic socket errors
-      const unsubError = websocketClient.on('error', (error) => {
-        if (!isMounted.current) return;
-        console.error('❌ Socket error:', error);
-      });
-      cleanupFunctions.current.push(unsubError);
-
-      // Check if already connected
-      if (websocketClient.isConnected()) {
-        setIsConnected(true);
-        setIsReady(true);
-        if (connectionTimeout.current) {
-          clearTimeout(connectionTimeout.current);
-          connectionTimeout.current = null;
-        }
-      } else {
-        // Set ready after a short delay to avoid blocking UI
-        setTimeout(() => {
-          if (isMounted.current && !isConnected) {
-            setIsReady(true);
-          }
-        }, 2000);
-      }
-
-    } catch (error) {
-      console.error('❌ Error setting up WebSocket:', error);
-      setConnectionError(error?.message || 'Failed to initialize WebSocket');
-      setIsReady(true);
-
-      if (connectionTimeout.current) {
-        clearTimeout(connectionTimeout.current);
-        connectionTimeout.current = null;
-      }
-    }
-
-    // Cleanup function
-    return () => {
-      console.log('🧹 Cleaning up WebSocket (unmount)');
-      isMounted.current = false;
-
-      if (connectionTimeout.current) {
-        clearTimeout(connectionTimeout.current);
-        connectionTimeout.current = null;
-      }
-
-      // Remove all event listeners
-      cleanupFunctions.current.forEach(fn => {
-        try {
-          fn();
-        } catch (e) {
-          console.error('Error during cleanup:', e);
-        }
-      });
-      cleanupFunctions.current = [];
-
-      // Only disconnect if not authenticated anymore
-      if (!isAuthenticated) {
-        websocketClient.disconnect();
-        hasInitialized.current = false;
-      }
-    };
-  }, [isAuthenticated, token, isLoading, isConnected, tryRefreshToken]);
-
-  const value = {
-    isConnected,
-    isReady,
-    connectionError,
-    socket: websocketClient,
-  };
-
-  // Show loading state only briefly
-  if (!isReady && isAuthenticated && !connectionError) {
-    return (
-      <WebSocketContext.Provider value={value}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          fontSize: '16px',
-          color: '#666',
-          gap: '20px'
-        }}>
-          <div style={{ fontSize: '24px' }}>⏳</div>
-          <div>Connecting to real-time updates...</div>
-        </div>
-      </WebSocketContext.Provider>
-    );
-  }
-
-  return (
-    <WebSocketContext.Provider value={value}>
-      {connectionError && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          backgroundColor: '#fee',
-          color: '#c00',
-          padding: '15px 20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          zIndex: 9999,
-          maxWidth: '400px',
-          fontSize: '14px'
-        }}>
-          <strong>⚠️ Connection Error:</strong>
-          <div style={{ marginTop: '5px' }}>{connectionError}</div>
-        </div>
-      )}
-      {children}
-    </WebSocketContext.Provider>
-  );
-};
+const WebSocketContext = createContext(null);
 
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
@@ -271,4 +14,196 @@ export const useWebSocket = () => {
     throw new Error('useWebSocket must be used within WebSocketProvider');
   }
   return context;
+};
+
+export const WebSocketProvider = ({ children }) => {
+  const { user, accessToken, refreshAccessToken } = useAuth();
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
+  const socketRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const tokenRefreshInProgressRef = useRef(false);
+
+  useEffect(() => {
+    if (!user || !accessToken) {
+      console.log('🔌 No user/token - skipping WebSocket connection');
+      return;
+    }
+
+    console.log('🔌 Initializing WebSocket connection...');
+    console.log('🔌 Connecting to WebSocket:', config.API_URL);
+
+    // Initialize socket with current token
+    const socket = io(config.API_URL, {
+      auth: { token: accessToken },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: maxReconnectAttempts,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      timeout: 20000,
+    });
+
+    socketRef.current = socket;
+
+    // ✅ Connection success handler
+    socket.on('connect', () => {
+      console.log('✅ WebSocket connected:', socket.id);
+      setIsConnected(true);
+      setConnectionError(null);
+      reconnectAttemptsRef.current = 0;
+    });
+
+    // ✅ Connection confirmation from server
+    socket.on('connection:success', (data) => {
+      console.log('✅ Server confirmed connection:', data);
+      console.log('📱 Assigned devices:', data.assignedDevices);
+    });
+
+    // ✅ FIX: Handle connection errors with token refresh
+    socket.on('connect_error', async (error) => {
+      const errorMessage = error.message || String(error);
+      console.error('❌ Connection error:', errorMessage);
+
+      // Check if it's a token-related error
+      if (
+        errorMessage.includes('TOKEN_EXPIRED') ||
+        errorMessage.includes('TOKEN_INVALID') ||
+        errorMessage.includes('TOKEN_ERROR')
+      ) {
+        console.log('🔄 Token error detected - attempting to refresh...');
+
+        // Prevent multiple simultaneous refresh attempts
+        if (tokenRefreshInProgressRef.current) {
+          console.log('⏳ Token refresh already in progress...');
+          return;
+        }
+
+        tokenRefreshInProgressRef.current = true;
+
+        try {
+          // Try to refresh the access token
+          const newToken = await refreshAccessToken();
+
+          if (newToken) {
+            console.log('✅ Token refreshed - reconnecting with new token...');
+
+            // Update socket authentication with new token
+            socket.auth = { token: newToken };
+
+            // Disconnect and reconnect with new token
+            socket.disconnect();
+            socket.connect();
+          } else {
+            console.error('❌ Failed to refresh token');
+            setConnectionError('Session expired - please log in again');
+          }
+        } catch (refreshError) {
+          console.error('❌ Token refresh error:', refreshError);
+          setConnectionError('Authentication failed - please log in again');
+        } finally {
+          tokenRefreshInProgressRef.current = false;
+        }
+      } else {
+        // Other connection errors
+        setConnectionError(errorMessage);
+      }
+
+      console.log('Error details:', error);
+    });
+
+    // ✅ Disconnect handler
+    socket.on('disconnect', (reason) => {
+      console.log('❌ WebSocket disconnected:', reason);
+      setIsConnected(false);
+
+      // If server initiated disconnect due to token, try to refresh
+      if (reason === 'io server disconnect' && !tokenRefreshInProgressRef.current) {
+        console.log('🔄 Server disconnected - checking token...');
+        tokenRefreshInProgressRef.current = true;
+
+        refreshAccessToken()
+          .then((newToken) => {
+            if (newToken) {
+              console.log('✅ Token refreshed - manual reconnect...');
+              socket.auth = { token: newToken };
+              socket.connect();
+            }
+          })
+          .catch((err) => {
+            console.error('❌ Token refresh failed:', err);
+          })
+          .finally(() => {
+            tokenRefreshInProgressRef.current = false;
+          });
+      }
+    });
+
+    // ✅ Reconnection attempt tracking
+    socket.io.on('reconnect_attempt', (attempt) => {
+      console.log(`🔄 Reconnection attempt #${attempt}`);
+      reconnectAttemptsRef.current = attempt;
+    });
+
+    // ✅ Reconnection success
+    socket.io.on('reconnect', (attemptNumber) => {
+      console.log(`✅ Reconnected after ${attemptNumber} attempts`);
+      setIsConnected(true);
+      setConnectionError(null);
+    });
+
+    // ✅ Reconnection failed
+    socket.io.on('reconnect_failed', () => {
+      console.error('❌ Reconnection failed after maximum attempts');
+      setConnectionError('Connection lost - please refresh the page');
+    });
+
+    // ✅ Generic error handler
+    socket.on('error', (error) => {
+      const errorData = typeof error === 'object' ? error : { message: error };
+      console.error('❌ Socket error:', errorData);
+
+      // Handle specific error codes
+      if (errorData.code === 'TOKEN_EXPIRED' || errorData.code === 'TOKEN_INVALID') {
+        console.log('🔄 Token error from server - refreshing...');
+
+        if (!tokenRefreshInProgressRef.current) {
+          tokenRefreshInProgressRef.current = true;
+
+          refreshAccessToken()
+            .then((newToken) => {
+              if (newToken) {
+                // Notify server of new token
+                socket.emit('token:refresh', { token: newToken });
+              }
+            })
+            .finally(() => {
+              tokenRefreshInProgressRef.current = false;
+            });
+        }
+      }
+    });
+
+    // ✅ Token refresh confirmation
+    socket.on('token:refreshed', (data) => {
+      console.log('✅ Server confirmed token refresh:', data);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      console.log('🧹 Cleaning up WebSocket (unmount)');
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user, accessToken, refreshAccessToken]);
+
+  const value = {
+    socket: socketRef.current,
+    isConnected,
+    connectionError,
+  };
+
+  return <WebSocketContext.Provider value={value}>{children}</WebSocketContext.Provider>;
 };

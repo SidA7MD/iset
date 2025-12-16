@@ -10,6 +10,10 @@ const start = async () => {
   try {
     await connectDB();
 
+    // ✅ FIX: Enable trust proxy BEFORE initializing WebSocket
+    // This is critical for Render deployment and rate limiting
+    app.set('trust proxy', 1);
+
     websocketService.initialize(server);
 
     const PORT = process.env.PORT || config.port || 3000;
