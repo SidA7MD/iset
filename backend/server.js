@@ -8,22 +8,31 @@ const server = http.createServer(app);
 
 const start = async () => {
   try {
-    await connectDB();
-
-    // ✅ FIX: Enable trust proxy BEFORE initializing WebSocket
-    // This is critical for Render deployment and rate limiting
-    app.set('trust proxy', 1);
-
-    websocketService.initialize(server);
-
     const PORT = process.env.PORT || config.port || 3000;
     const HOST = '0.0.0.0';
 
+    // ✅ Start listening as early as possible so Render sees the service as "up"
     server.listen(PORT, HOST, () => {
-      console.log(`Server running on ${PORT}`);
+      console.log(`🚀 Server starting on port ${PORT}...`);
+      console.log(`📡 Health check available at: http://localhost:${PORT}/health`);
     });
+
+    console.log('🔄 Connecting to MongoDB...');
+    await connectDB();
+    console.log('✅ MongoDB connection established.');
+
+    // ✅ Enable trust proxy for Render/Vercel
+    app.set('trust proxy', 1);
+
+    websocketService.initialize(server);
+    console.log('🔌 WebSocket service initialized.');
+
   } catch (err) {
-    console.error('Startup error:', err);
+    console.error('❌ CRITICAL Startup error:', err);
+    // Log the full error object if it's not a standard error
+    if (err && typeof err === 'object' && !(err instanceof Error)) {
+      console.error('Error detail:', JSON.stringify(err, null, 2));
+    }
     process.exit(1);
   }
 };
