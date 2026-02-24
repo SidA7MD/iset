@@ -83,12 +83,29 @@ class UserController {
         throw new NotFoundError('User not found');
       }
 
-      user.isActive = false;
-      await user.save();
+      // Prevent deleting admin users
+      if (user.role === 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot delete admin users',
+        });
+      }
+
+      // Unassign all devices from this user
+      if (user.assignedDevices && user.assignedDevices.length > 0) {
+        const Device = require('../models/Device');
+        await Device.updateMany(
+          { assignedTo: user._id },
+          { $set: { assignedTo: null } }
+        );
+      }
+
+      // Permanently delete the user
+      await User.findByIdAndDelete(req.params.userId);
 
       res.json({
         success: true,
-        message: 'User deactivated successfully',
+        message: 'User deleted permanently',
       });
     } catch (error) {
       next(error);

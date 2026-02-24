@@ -28,7 +28,7 @@ export default function UserManagement() {
       setUsers(response.data.users);
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+      toast.error('Échec du chargement des utilisateurs');
     } finally {
       setLoading(false);
     }
@@ -45,11 +45,11 @@ export default function UserManagement() {
     try {
       await userApi.deleteUser(deleteConfirm._id);
       setUsers(users.filter(u => u._id !== deleteConfirm._id));
-      toast.success('User deactivated successfully');
+      toast.success('Utilisateur supprimé définitivement');
       setDeleteConfirm(null);
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
+      toast.error(error?.response?.data?.message || 'Échec de la suppression de l\'utilisateur');
     }
   };
 
@@ -64,132 +64,132 @@ export default function UserManagement() {
   );
 
   if (loading) {
-    return <LoadingSpinner message="Loading users..." />;
+    return <LoadingSpinner message="Chargement des utilisateurs..." />;
   }
 
+  // Metric cards data
+  const metrics = [
+    { label: 'Total', value: users.length, color: 'text-base-content' },
+    { label: 'Actifs', value: users.filter(u => u.isActive).length, color: 'text-emerald-400' },
+    { label: 'Admins', value: users.filter(u => u.role === 'admin').length, color: 'text-cyan-400' },
+    { label: 'Standard', value: users.filter(u => u.role === 'user').length, color: 'text-sky-400' },
+  ];
+
   return (
-    <div className="space-y-4 p-3 sm:p-4 md:p-6">
-      {/* Header */}
+    <div className="space-y-6">
+
+      {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Users className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8" />
-            User Management
-          </h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">
-            Manage user accounts and device assignments
-          </p>
+          <h1 className="text-xl font-semibold text-base-content tracking-tight">Gestion des utilisateurs</h1>
+          <p className="text-sm text-base-content/40 mt-0.5">Gérer les comptes et les assignations d'appareils</p>
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="btn btn-primary btn-sm sm:btn-md gap-2 w-full sm:w-auto"
+          className="btn-primary-custom"
         >
           <Plus className="h-4 w-4" />
-          Create User
+          Créer un utilisateur
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="stat bg-base-100 rounded-lg border border-base-300 p-3 sm:p-4">
-          <div className="stat-title text-xs sm:text-sm">Total Users</div>
-          <div className="stat-value text-lg sm:text-xl md:text-2xl">{users.length}</div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg border border-base-300 p-3 sm:p-4">
-          <div className="stat-title text-xs sm:text-sm">Active Users</div>
-          <div className="stat-value text-success text-lg sm:text-xl md:text-2xl">
-            {users.filter(u => u.isActive).length}
+      {/* ── Metrics row ────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {metrics.map((m) => (
+          <div key={m.label} className="metric-card py-4">
+            <div className={`text-2xl font-bold ${m.color}`}>{m.value}</div>
+            <div className="section-label mt-1">{m.label} Utilisateurs</div>
           </div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg border border-base-300 p-3 sm:p-4">
-          <div className="stat-title text-xs sm:text-sm">Admin Users</div>
-          <div className="stat-value text-info text-lg sm:text-xl md:text-2xl">
-            {users.filter(u => u.role === 'admin').length}
-          </div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg border border-base-300 p-3 sm:p-4">
-          <div className="stat-title text-xs sm:text-sm">Regular Users</div>
-          <div className="stat-value text-warning text-lg sm:text-xl md:text-2xl">
-            {users.filter(u => u.role === 'user').length}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Search */}
-      <div className="bg-base-100 rounded-lg border border-base-300 p-4">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            className="input input-bordered w-full pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
+      {/* ── Search + Table ─────────────────────────────────────── */}
+      <div className="bg-base-200 border border-base-300 rounded-xl overflow-hidden">
 
-      {/* Users Table/Cards */}
-      <div className="bg-base-100 rounded-lg border border-base-300">
-        {/* Desktop Table */}
+        {/* Search bar */}
+        <div className="px-5 py-4 border-b border-base-300">
+          <div className="relative max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-base-content/30" />
+            <input
+              type="text"
+              placeholder="Rechercher des utilisateurs…"
+              className="input-field pl-9 text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* ── Desktop Table ─── */}
         <div className="hidden lg:block overflow-x-auto">
-          <table className="table table-zebra w-full">
+          <table className="w-full text-sm">
             <thead>
-              <tr>
-                <th>User</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Devices</th>
-                <th>Status</th>
-                <th>Actions</th>
+              <tr className="border-b border-base-300">
+                {['Utilisateur', 'Email', 'Rôle', 'Appareils', 'Statut', 'Actions'].map((col) => (
+                  <th
+                    key={col}
+                    className="text-left px-5 py-3 text-[10px] uppercase tracking-wider text-base-content/35 font-semibold"
+                  >
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-base-300">
               {filteredUsers.map((user) => (
-                <tr key={user._id}>
-                  <td>
-                    <div className="font-semibold">{user.username}</div>
+                <tr key={user._id} className="hover:bg-base-300/40 transition-colors duration-100">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-cyan-500/15 text-cyan-300
+                                      flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                        {user.username[0].toUpperCase()}
+                      </div>
+                      <span className="font-medium text-base-content">{user.username}</span>
+                    </div>
                   </td>
-                  <td>{user.email}</td>
-                  <td>
-                    <span className={`badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'}`}>
+                  <td className="px-5 py-3.5 text-base-content/50">{user.email}</td>
+                  <td className="px-5 py-3.5">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-medium ${user.role === 'admin'
+                        ? 'bg-cyan-500/15 text-cyan-300'
+                        : 'bg-base-300/80 text-base-content/50'
+                      }`}>
                       {user.role}
                     </span>
                   </td>
-                  <td>
-                    <span className="badge badge-outline">
-                      {user.assignedDevices?.length || 0} devices
+                  <td className="px-5 py-3.5">
+                    <span className="text-xs text-base-content/40">
+                      {user.assignedDevices?.length || 0} appareils
                     </span>
                   </td>
-                  <td>
+                  <td className="px-5 py-3.5">
                     {user.isActive ? (
-                      <span className="flex items-center gap-1 text-success">
-                        <CheckCircle className="h-4 w-4" />
-                        Active
+                      <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Actif
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 text-error">
-                        <XCircle className="h-4 w-4" />
-                        Inactive
+                      <span className="flex items-center gap-1.5 text-xs text-base-content/30">
+                        <XCircle className="h-3.5 w-3.5" />
+                        Inactif
                       </span>
                     )}
                   </td>
-                  <td>
-                    <div className="flex gap-2">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleAssignDevices(user)}
-                        className="btn btn-sm btn-outline btn-info"
-                        title="Assign Devices"
+                        className="btn-ghost-custom px-2 py-1.5 text-xs"
+                        title="Assigner des appareils"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(user)}
-                        className="btn btn-sm btn-outline btn-error"
-                        title="Delete User"
+                        className="btn-danger-custom px-2 py-1.5 text-xs"
+                        title="Supprimer l'utilisateur"
                         disabled={user.role === 'admin'}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </td>
@@ -199,64 +199,48 @@ export default function UserManagement() {
           </table>
         </div>
 
-        {/* Tablet View */}
+        {/* ── Tablet Table ─── */}
         <div className="hidden md:block lg:hidden overflow-x-auto">
-          <table className="table table-zebra w-full">
+          <table className="w-full text-sm">
             <thead>
-              <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Devices</th>
-                <th>Status</th>
-                <th>Actions</th>
+              <tr className="border-b border-base-300">
+                {['Utilisateur', 'Rôle', 'Appareils', 'Statut', 'Actions'].map((col) => (
+                  <th key={col} className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-base-content/35 font-semibold">
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-base-300">
               {filteredUsers.map((user) => (
-                <tr key={user._id}>
-                  <td>
-                    <div className="font-semibold">{user.username}</div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
+                <tr key={user._id} className="hover:bg-base-300/40 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-base-content">{user.username}</div>
+                    <div className="text-xs text-base-content/40">{user.email}</div>
                   </td>
-                  <td>
-                    <span className={`badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'}`}>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-medium ${user.role === 'admin' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-base-300/80 text-base-content/50'
+                      }`}>
                       {user.role}
                     </span>
                   </td>
-                  <td>
-                    <span className="badge badge-outline">
-                      {user.assignedDevices?.length || 0} devices
-                    </span>
+                  <td className="px-4 py-3 text-xs text-base-content/40">
+                    {user.assignedDevices?.length || 0} appareils
                   </td>
-                  <td>
+                  <td className="px-4 py-3">
                     {user.isActive ? (
-                      <span className="flex items-center gap-1 text-success">
-                        <CheckCircle className="h-4 w-4" />
-                        Active
-                      </span>
+                      <span className="flex items-center gap-1 text-xs text-emerald-400"><CheckCircle className="h-3.5 w-3.5" />Actif</span>
                     ) : (
-                      <span className="flex items-center gap-1 text-error">
-                        <XCircle className="h-4 w-4" />
-                        Inactive
-                      </span>
+                      <span className="flex items-center gap-1 text-xs text-base-content/30"><XCircle className="h-3.5 w-3.5" />Inactif</span>
                     )}
                   </td>
-                  <td>
+                  <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => handleAssignDevices(user)}
-                        className="btn btn-sm btn-outline btn-info"
-                        title="Assign Devices"
-                      >
-                        <Edit className="h-4 w-4" />
+                      <button onClick={() => handleAssignDevices(user)} className="btn-ghost-custom px-2 py-1.5 text-xs" title="Assign Devices">
+                        <Edit className="h-3.5 w-3.5" />
                       </button>
-                      <button
-                        onClick={() => setDeleteConfirm(user)}
-                        className="btn btn-sm btn-outline btn-error"
-                        title="Delete User"
-                        disabled={user.role === 'admin'}
-                      >
-                        <Trash2 className="h-4 w-4" />
+                      <button onClick={() => setDeleteConfirm(user)} className="btn-danger-custom px-2 py-1.5 text-xs" disabled={user.role === 'admin'}>
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </td>
@@ -266,57 +250,45 @@ export default function UserManagement() {
           </table>
         </div>
 
-        {/* Mobile Cards */}
-        <div className="md:hidden space-y-3 p-4">
+        {/* ── Mobile Cards ─── */}
+        <div className="md:hidden divide-y divide-base-300">
           {filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No users found
-            </div>
+            <div className="py-12 text-center text-sm text-base-content/30">Aucun utilisateur trouvé</div>
           ) : (
             filteredUsers.map((user) => (
-              <div key={user._id} className="bg-base-200 rounded-lg p-4 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-lg">{user.username}</h3>
-                    <p className="text-gray-600 text-sm">{user.email}</p>
+              <div key={user._id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-cyan-500/15 text-cyan-300
+                                    flex items-center justify-center text-sm font-semibold">
+                      {user.username[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-base-content">{user.username}</p>
+                      <p className="text-xs text-base-content/40">{user.email}</p>
+                    </div>
                   </div>
-                  <span className={`badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'}`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-medium ${user.role === 'admin' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-base-300/80 text-base-content/50'
+                    }`}>
                     {user.role}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="badge badge-outline">
-                    {user.assignedDevices?.length || 0} devices
-                  </span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-base-content/40">{user.assignedDevices?.length || 0} appareils</span>
                   {user.isActive ? (
-                    <span className="flex items-center gap-1 text-success text-sm">
-                      <CheckCircle className="h-4 w-4" />
-                      Active
-                    </span>
+                    <span className="flex items-center gap-1 text-emerald-400"><CheckCircle className="h-3.5 w-3.5" />Actif</span>
                   ) : (
-                    <span className="flex items-center gap-1 text-error text-sm">
-                      <XCircle className="h-4 w-4" />
-                      Inactive
-                    </span>
+                    <span className="flex items-center gap-1 text-base-content/30"><XCircle className="h-3.5 w-3.5" />Inactif</span>
                   )}
                 </div>
 
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={() => handleAssignDevices(user)}
-                    className="btn btn-sm btn-outline btn-info flex-1 gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Assign Devices
+                <div className="flex gap-2 pt-1">
+                  <button onClick={() => handleAssignDevices(user)} className="btn-ghost-custom flex-1 justify-center text-xs py-1.5">
+                    <Edit className="h-3.5 w-3.5" /> Assigner des appareils
                   </button>
-                  <button
-                    onClick={() => setDeleteConfirm(user)}
-                    className="btn btn-sm btn-outline btn-error flex-1 gap-2"
-                    disabled={user.role === 'admin'}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
+                  <button onClick={() => setDeleteConfirm(user)} className="btn-danger-custom flex-1 justify-center text-xs py-1.5" disabled={user.role === 'admin'}>
+                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
                   </button>
                 </div>
               </div>
@@ -324,32 +296,28 @@ export default function UserManagement() {
           )}
         </div>
 
-        {/* Empty State */}
+        {/* Empty states */}
         {filteredUsers.length === 0 && users.length > 0 && (
-          <div className="text-center py-8 px-4">
-            <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-500 mb-2">No users found</h3>
-            <p className="text-gray-400 text-sm">Try adjusting your search term</p>
+          <div className="hidden md:flex flex-col items-center py-12 text-center">
+            <Search className="h-8 w-8 text-base-content/15 mb-3" />
+            <p className="text-sm text-base-content/40">Aucun résultat pour "{searchTerm}"</p>
+            <p className="text-xs text-base-content/25 mt-1">Essayez un autre terme de recherche</p>
           </div>
         )}
 
         {users.length === 0 && (
-          <div className="text-center py-8 px-4">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-500 mb-2">No users yet</h3>
-            <p className="text-gray-400 text-sm mb-4">Get started by creating your first user</p>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="btn btn-primary gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Create First User
+          <div className="hidden md:flex flex-col items-center py-12 text-center">
+            <Users className="h-8 w-8 text-base-content/15 mb-3" />
+            <p className="text-sm text-base-content/40">Aucun utilisateur</p>
+            <p className="text-xs text-base-content/25 mt-1 mb-4">Créez votre premier utilisateur pour commencer</p>
+            <button onClick={() => setShowCreateForm(true)} className="btn-primary-custom text-xs">
+              <Plus className="h-3.5 w-3.5" /> Créer le premier utilisateur
             </button>
           </div>
         )}
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ─────────────────────────────────────────────── */}
       {showCreateForm && (
         <CreateUserForm
           onClose={() => setShowCreateForm(false)}
@@ -372,9 +340,9 @@ export default function UserManagement() {
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
         onConfirm={handleDeleteUser}
-        title="Deactivate User"
-        message={`Are you sure you want to deactivate ${deleteConfirm?.username}? This action can be reversed.`}
-        confirmText="Deactivate"
+        title="Supprimer l'utilisateur définitivement"
+        message={`Êtes-vous sûr de vouloir supprimer définitivement ${deleteConfirm?.username} ? Cela supprimera l'utilisateur et désassignera tous ses appareils. Cette action est irréversible.`}
+        confirmText="Supprimer définitivement"
       />
     </div>
   );

@@ -5,9 +5,9 @@ import { THRESHOLDS } from './thresholds';
  * Format timestamp to readable date string
  */
 export const formatTimestamp = (timestamp) => {
-  if (!timestamp) return 'N/A';
+  if (!timestamp) return 'N/D';
   const date = new Date(timestamp);
-  return date.toLocaleString('en-US', {
+  return date.toLocaleString('fr-FR', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -25,9 +25,9 @@ export const formatDate = formatTimestamp;
  * Format timestamp to short time
  */
 export const formatTime = (timestamp) => {
-  if (!timestamp) return 'N/A';
+  if (!timestamp) return 'N/D';
   const date = new Date(timestamp);
-  return date.toLocaleTimeString('en-US', {
+  return date.toLocaleTimeString('fr-FR', {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -99,7 +99,7 @@ export const getBadgeColorClasses = (level) => {
  * Format sensor value with unit
  */
 export const formatSensorValue = (sensorType, value) => {
-  if (value === null || value === undefined) return 'N/A';
+  if (value === null || value === undefined) return 'N/D';
 
   const units = {
     temp: '°C',
@@ -121,9 +121,9 @@ export const formatValue = formatSensorValue;
  */
 export const getSensorLabel = (sensorType) => {
   const labels = {
-    temp: 'Temperature',
-    hmdt: 'Humidity',
-    gaz: 'Gas Level',
+    temp: 'Température',
+    hmdt: 'Humidité',
+    gaz: 'Niveau de Gaz',
   };
   return labels[sensorType] || sensorType;
 };
@@ -163,14 +163,14 @@ export const getStatusBadgeClasses = (status) => {
  * Calculate time ago
  */
 export const timeAgo = (timestamp) => {
-  if (!timestamp) return 'Never';
+  if (!timestamp) return 'Jamais';
 
   const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
 
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
+  if (seconds < 60) return `il y a ${seconds}s`;
+  if (seconds < 3600) return `il y a ${Math.floor(seconds / 60)}min`;
+  if (seconds < 86400) return `il y a ${Math.floor(seconds / 3600)}h`;
+  return `il y a ${Math.floor(seconds / 86400)}j`;
 };
 
 /**
@@ -252,7 +252,7 @@ export const isValidMacAddress = (mac) => {
  * Format MAC address
  */
 export const formatMacAddress = (mac) => {
-  if (!mac) return 'N/A';
+  if (!mac) return 'N/D';
   return mac.toUpperCase();
 };
 
@@ -322,7 +322,7 @@ export const formatErrorMessage = (error) => {
   if (error?.response?.data?.message) return error.response.data.message;
   if (error?.response?.data?.error) return error.response.data.error;
   if (error?.message) return error.message;
-  return 'An unexpected error occurred';
+  return 'Une erreur inattendue s\'est produite';
 };
 
 /**

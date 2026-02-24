@@ -9,9 +9,9 @@ export default function UserDevicesList({ devices }) {
       <div className="text-center py-12 px-4">
         <div className="max-w-xs mx-auto">
           <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-500 mb-2">No devices assigned</h3>
+          <h3 className="text-lg font-medium text-gray-500 mb-2">Aucun appareil assigné</h3>
           <p className="text-sm text-gray-400">
-            This user doesn't have any devices assigned yet.
+            Cet utilisateur n'a aucun appareil assigné.
           </p>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function UserDevicesList({ devices }) {
                   <div className="flex items-center gap-2 text-gray-600">
                     <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                     <span className="flex-1">
-                      Last seen: <span className="font-medium">{formatRelativeTime(device.lastSeen)}</span>
+                      Dernière vue : <span className="font-medium">{formatRelativeTime(device.lastSeen)}</span>
                     </span>
                   </div>
                 )}
@@ -125,15 +125,15 @@ export default function UserDevicesList({ devices }) {
                       }`}
                   />
                   <span className="text-xs text-gray-500">
-                    {online ? 'Currently online' : 'Currently offline'}
+                    {online ? 'Actuellement en ligne' : 'Actuellement hors ligne'}
                   </span>
                 </div>
               </div>
 
               {/* Optional: Action Buttons */}
               <div className="card-actions justify-end mt-4 pt-3 border-t border-base-300">
-                <button className="btn btn-xs btn-ghost">View Details</button>
-                <button className="btn btn-xs btn-primary">Manage</button>
+                <button className="btn btn-xs btn-ghost">Voir les détails</button>
+                <button className="btn btn-xs btn-primary">Gérer</button>
               </div>
             </div>
           </div>

@@ -86,27 +86,27 @@ export default function DebugPanel() {
     <div className="fixed bottom-4 right-4 w-96 bg-base-100 shadow-2xl rounded-lg border border-base-300 z-50">
       {/* Header */}
       <div className="bg-primary text-primary-content p-3 rounded-t-lg">
-        <h3 className="font-bold text-sm">🔍 Real-Time Debug Panel</h3>
+        <h3 className="font-bold text-sm">🔍 Panneau de débogage temps réel</h3>
       </div>
 
       {/* Status */}
       <div className="p-3 space-y-2 text-xs">
         <div className="flex justify-between">
-          <span>WebSocket:</span>
+          <span>WebSocket :</span>
           <span className={isConnected ? 'text-success' : 'text-error'}>
-            {isConnected ? '✅ Connected' : '❌ Disconnected'}
+            {isConnected ? '✅ Connecté' : '❌ Déconnecté'}
           </span>
         </div>
         <div className="flex justify-between">
-          <span>User ID:</span>
+          <span>ID Utilisateur :</span>
           <span className="text-info">{user?.id || 'N/A'}</span>
         </div>
         <div className="flex justify-between">
-          <span>Data Received:</span>
+          <span>Données reçues :</span>
           <span className="text-success font-bold">{sensorDataCount}</span>
         </div>
         <div className="flex justify-between">
-          <span>Devices in Memory:</span>
+          <span>Appareils en mémoire :</span>
           <span className="text-info">{allData.length}</span>
         </div>
       </div>
@@ -117,26 +117,26 @@ export default function DebugPanel() {
           onClick={testBroadcast}
           className="btn btn-sm btn-primary w-full"
         >
-          🧪 Test WebSocket Broadcast
+          🧪 Tester la diffusion WebSocket
         </button>
         <button
           onClick={testIngestion}
           className="btn btn-sm btn-secondary w-full"
         >
-          📥 Test Data Ingestion
+          📥 Tester l'ingestion de données
         </button>
         <button
           onClick={clearLogs}
           className="btn btn-sm btn-ghost w-full"
         >
-          🗑️ Clear Logs
+          🗑️ Effacer les logs
         </button>
       </div>
 
       {/* Device Data Preview */}
       {allData.length > 0 && (
         <div className="p-3 border-t border-base-300">
-          <div className="text-xs font-bold mb-2">Latest Device Data:</div>
+          <div className="text-xs font-bold mb-2">Dernières données :</div>
           <div className="space-y-1 max-h-32 overflow-y-auto">
             {allData.map((data, idx) => (
               <div key={idx} className="text-xs bg-base-200 p-2 rounded">
@@ -154,10 +154,10 @@ export default function DebugPanel() {
 
       {/* Event Log */}
       <div className="p-3 border-t border-base-300">
-        <div className="text-xs font-bold mb-2">Event Log (last 20):</div>
+        <div className="text-xs font-bold mb-2">Journal d'événements (20 derniers) :</div>
         <div className="bg-base-200 rounded p-2 max-h-48 overflow-y-auto font-mono text-xs space-y-1">
           {logs.length === 0 && (
-            <div className="text-gray-500">No events yet...</div>
+            <div className="text-gray-500">Aucun événement...</div>
           )}
           {logs.map((log, idx) => (
             <div

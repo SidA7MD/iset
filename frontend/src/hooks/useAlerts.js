@@ -23,7 +23,7 @@ export const useAlerts = () => {
       setUnacknowledgedCount(unacked);
     } catch (error) {
       console.error('Error fetching alerts:', error);
-      toast.error('Failed to load alerts');
+      toast.error('Échec du chargement des alertes');
     } finally {
       setLoading(false);
     }
@@ -42,10 +42,10 @@ export const useAlerts = () => {
       );
 
       setUnacknowledgedCount((prev) => Math.max(0, prev - 1));
-      toast.success('Alert acknowledged');
+      toast.success('Alerte acquittée');
     } catch (error) {
       console.error('Error acknowledging alert:', error);
-      toast.error('Failed to acknowledge alert');
+      toast.error('Échec de l\'acquittement de l\'alerte');
     }
   }, []);
 

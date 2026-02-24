@@ -1,6 +1,3 @@
-
-// =====================================================
-
 // frontend/src/pages/admin/AdminDashboard.jsx
 import { Activity, AlertTriangle, Monitor, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -50,67 +47,87 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading dashboard..." />;
+    return <LoadingSpinner message="Chargement du tableau de bord..." />;
   }
+
+  const metricCards = [
+    {
+      icon: Users,
+      iconColor: 'text-cyan-400',
+      iconBg: 'bg-cyan-500/10',
+      label: 'Total Utilisateurs',
+      value: stats.totalUsers,
+      sub: `${stats.activeUsers} actifs`,
+      subColor: 'text-emerald-400',
+    },
+    {
+      icon: Monitor,
+      iconColor: 'text-sky-400',
+      iconBg: 'bg-sky-500/10',
+      label: 'Total Appareils',
+      value: stats.totalDevices,
+      sub: `${stats.activeDevices} en ligne`,
+      subColor: 'text-emerald-400',
+    },
+    {
+      icon: Activity,
+      iconColor: 'text-emerald-400',
+      iconBg: 'bg-emerald-500/10',
+      label: 'Appareils actifs',
+      value: stats.activeDevices,
+      sub: 'Surveillance en temps réel',
+      subColor: 'text-base-content/40',
+    },
+    {
+      icon: AlertTriangle,
+      iconColor: 'text-amber-400',
+      iconBg: 'bg-amber-500/10',
+      label: 'État du système',
+      value: null,
+      display: 'OK',
+      sub: 'Tous les systèmes normaux',
+      subColor: 'text-emerald-400',
+    },
+  ];
 
   return (
     <div className="space-y-6">
+      {/* Page header */}
       <div>
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-gray-600 mt-1">System overview and management</p>
+        <h1 className="text-xl font-semibold text-base-content tracking-tight">Tableau de bord Admin</h1>
+        <p className="text-sm text-base-content/40 mt-0.5">Vue d'ensemble et gestion du système</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="stats shadow">
-          <div className="stat">
-            <div className="stat-figure text-primary">
-              <Users className="h-8 w-8" />
+      {/* Metric cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {metricCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <div key={card.label} className="metric-card">
+              <div className="flex items-start justify-between mb-3">
+                <div className={`w-8 h-8 rounded-lg ${card.iconBg} flex items-center justify-center`}>
+                  <Icon className={`h-4 w-4 ${card.iconColor}`} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-base-content tracking-tight">
+                {card.value !== null ? card.value : card.display}
+              </div>
+              <div className="section-label mt-2">{card.label}</div>
+              <div className={`text-xs mt-1 ${card.subColor}`}>{card.sub}</div>
             </div>
-            <div className="stat-title">Total Users</div>
-            <div className="stat-value text-primary">{stats.totalUsers}</div>
-            <div className="stat-desc">{stats.activeUsers} active</div>
-          </div>
-        </div>
-
-        <div className="stats shadow">
-          <div className="stat">
-            <div className="stat-figure text-secondary">
-              <Monitor className="h-8 w-8" />
-            </div>
-            <div className="stat-title">Total Devices</div>
-            <div className="stat-value text-secondary">{stats.totalDevices}</div>
-            <div className="stat-desc">{stats.activeDevices} online</div>
-          </div>
-        </div>
-
-        <div className="stats shadow">
-          <div className="stat">
-            <div className="stat-figure text-success">
-              <Activity className="h-8 w-8" />
-            </div>
-            <div className="stat-title">Active Devices</div>
-            <div className="stat-value text-success">{stats.activeDevices}</div>
-            <div className="stat-desc">Real-time monitoring</div>
-          </div>
-        </div>
-
-        <div className="stats shadow">
-          <div className="stat">
-            <div className="stat-figure text-warning">
-              <AlertTriangle className="h-8 w-8" />
-            </div>
-            <div className="stat-title">System Status</div>
-            <div className="stat-value text-sm">Operational</div>
-            <div className="stat-desc">All systems normal</div>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
-      {/* Recent Devices */}
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h2 className="card-title">All Devices ({devices.length})</h2>
+      {/* All Devices panel */}
+      <div className="bg-base-200 border border-base-300 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-base-300 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-base-content">Tous les appareils</h2>
+            <p className="section-label mt-0.5">{devices.length} total</p>
+          </div>
+        </div>
+        <div className="p-5">
           <UserDevicesList devices={devices} />
         </div>
       </div>

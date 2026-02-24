@@ -22,4 +22,18 @@ export const sensorDataApi = {
     });
     return response.data;
   },
+
+  getDailyAggregation: async (MAC, start, end) => {
+    const response = await axios.get(`/sensor-data/${MAC}/daily`, {
+      params: { start, end },
+    });
+    return response.data;
+  },
+
+  getMonthlyAggregation: async (MAC, year) => {
+    const response = await axios.get(`/sensor-data/${MAC}/monthly`, {
+      params: { year },
+    });
+    return response.data;
+  },
 };

@@ -4,6 +4,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import UserLayout from './layouts/UserLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import DevicesPage from './pages/admin/DevicesPage';
 import UsersPage from './pages/admin/UsersPage';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
@@ -26,6 +27,7 @@ function App() {
       >
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="devices" element={<DevicesPage />} />
       </Route>
 
       {/* User Routes */}

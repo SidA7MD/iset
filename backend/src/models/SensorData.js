@@ -45,8 +45,7 @@ const sensorDataSchema = new mongoose.Schema(
 sensorDataSchema.index({ MAC: 1, timestamp: -1 });
 sensorDataSchema.index({ alertTriggered: 1 });
 
-// ✅ FIX: TTL index - this already creates an index on timestamp
-// The warning was because we had both "index: true" on the field AND this TTL index
-sensorDataSchema.index({ timestamp: 1 }, { expireAfterSeconds: 2592000 }); // 30 days
+// Data is kept permanently - no TTL index
+sensorDataSchema.index({ timestamp: 1 });
 
 module.exports = mongoose.model('SensorData', sensorDataSchema);

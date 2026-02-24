@@ -97,7 +97,7 @@ export default function Modal({
               <button
                 onClick={onClose}
                 className="btn btn-sm btn-circle btn-ghost flex-shrink-0 ml-auto"
-                aria-label="Close modal"
+                aria-label="Fermer la fenêtre"
               >
                 <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>

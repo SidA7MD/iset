@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0891b2"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
+  <!-- Radio/Signal Icon (centered) -->
+  <g stroke="white" stroke-width="2" stroke-linecap="round" fill="none" transform="translate(16, 16)">
+    <!-- Center dot -->
+    <circle cx="0" cy="0" r="2" fill="white"/>
+    <!-- Inner wave -->
+    <path d="M -5 -5 A 7 7 0 0 1 5 -5" opacity="0.9"/>
+    <path d="M 5 5 A 7 7 0 0 1 -5 5" opacity="0.9"/>
+    <!-- Outer wave -->
+    <path d="M -8 -8 A 11 11 0 0 1 8 -8" opacity="0.6"/>
+    <path d="M 8 8 A 11 11 0 0 1 -8 8" opacity="0.6"/>
+  </g>
+</svg>

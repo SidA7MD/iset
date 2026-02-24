@@ -1,14 +1,17 @@
 // frontend/src/components/auth/ProtectedRoute.jsx
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext'; // Make sure you import from context
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
-  const { isAuthenticated, loading, user } = useAuth();
+  // Fix: AuthContext exports `isLoading`, not `loading`.
+  // Previously this was always undefined/falsy so the spinner was never shown
+  // during auth state restore on hard refresh.
+  const { isAuthenticated, isLoading, user } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg"></span>
+        <span className="loading loading-spinner loading-lg" aria-label="Chargement de l'authentification" />
       </div>
     );
   }
@@ -17,9 +20,10 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect if user's role is not allowed
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-    return <Navigate to="/dashboard" replace />;
+    // Redirect unauthorised roles to their default dashboard
+    const fallback = user?.role === 'admin' ? '/admin' : '/dashboard';
+    return <Navigate to={fallback} replace />;
   }
 
   return children;

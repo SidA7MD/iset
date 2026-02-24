@@ -1,28 +1,45 @@
 // frontend/src/components/common/Sidebar.jsx
-import { AlertCircle, Home, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+// ══════════════════════════════════════════════════════════════════════════════
+// SIDEBAR NAVIGATION COMPONENT
+// ══════════════════════════════════════════════════════════════════════════════
+// Design System Implementation:
+// - Typography: Uses sidebar-specific type scale (11px labels, 13px nav items)
+// - Spacing: 4px grid system, consistent 12px horizontal padding
+// - Active State: Left indicator bar (3px) + subtle 8% background
+// - Colors: Semantic tokens from CSS custom properties
+// - Accessibility: WCAG 2.1 AA compliant contrast, focus-visible states
+// ══════════════════════════════════════════════════════════════════════════════
+
+import { HardDrive, Home, Radio, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
-export default function Sidebar() {
+/**
+ * Sidebar Navigation
+ * 
+ * @param {boolean} isMobileOpen - Controls mobile drawer visibility
+ * @param {function} onClose - Callback to close mobile sidebar
+ */
+export default function Sidebar({ isMobileOpen, onClose }) {
   const location = useLocation();
   const { user } = useAuth();
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin';
 
+  // Navigation configuration
   const adminLinks = [
-    { path: '/admin', icon: Home, label: 'Dashboard' },
-    { path: '/admin/users', icon: AlertCircle, label: 'Users' },
+    { path: '/admin', icon: Home, label: 'Tableau de bord' },
+    { path: '/admin/devices', icon: HardDrive, label: 'Appareils' },
+    { path: '/admin/users', icon: Users, label: 'Utilisateurs' },
   ];
 
   const userLinks = [
-    { path: '/dashboard', icon: Home, label: 'Dashboard' },
-    { path: '/dashboard/alerts', icon: AlertCircle, label: 'Alerts' },
+    { path: '/dashboard', icon: Home, label: 'Tableau de bord' },
   ];
 
   const links = isAdmin ? adminLinks : userLinks;
 
+  // Route matching logic
   const isActive = (path) => {
     if (path === '/dashboard' || path === '/admin') {
       return location.pathname === path;
@@ -30,107 +47,95 @@ export default function Sidebar() {
     return location.pathname.startsWith(path);
   };
 
-  const closeMobileSidebar = () => {
-    setIsMobileOpen(false);
-  };
+  // User avatar initials
+  const initials = user?.username?.[0]?.toUpperCase() || 'U';
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 btn btn-ghost btn-square btn-sm bg-base-200 shadow-md"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-      >
-        {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </button>
-
-      {/* Mobile Overlay */}
+      {/* ── Mobile Backdrop Overlay ───────────────────────────────────────────── */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={closeMobileSidebar}
+          className="sidebar-backdrop"
+          onClick={onClose}
+          aria-hidden="true"
         />
       )}
 
-      {/* Sidebar */}
-      <div className={`
-        w-64 bg-base-200 min-h-screen p-4 border-r border-base-300
-        fixed lg:sticky top-0 left-0 z-30
-        transition-transform duration-300 ease-in-out
-        h-screen overflow-y-auto
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        {/* Brand */}
-        <div className="mb-8 px-2">
-          <h1 className="text-xl font-bold text-base-content">
-            IoT Monitor
-          </h1>
-          <p className="text-sm text-base-content/60 mt-1 capitalize">
-            {user?.role || 'User'} Panel
-          </p>
+      {/* ── Sidebar Panel ─────────────────────────────────────────────────────── */}
+      <aside
+        id="sidebar-nav"
+        aria-label="Main navigation"
+        className={`sidebar ${isMobileOpen ? 'sidebar--open' : 'sidebar--closed'}`}
+      >
+        {/* ── Brand Header ──────────────────────────────────────────────────────── */}
+        <div className="sidebar-header">
+          {/* Logo */}
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-sm" aria-hidden="true">
+            <Radio className="w-4 h-4 text-white" />
+          </div>
+
+          {/* Brand Text */}
+          <div className="min-w-0 flex-1">
+            <p className="sidebar-brand-text">
+              ISET<span className="sidebar-brand-badge">+</span>
+            </p>
+            <p className="sidebar-brand-subtitle">
+              {isAdmin ? 'Panneau Admin' : 'Panneau Utilisateur'}
+            </p>
+          </div>
         </div>
 
-        {/* Navigation */}
-        <ul className="space-y-2">
-          {links.map((link) => {
-            const Icon = link.icon;
-            const active = isActive(link.path);
+        {/* ── Navigation ────────────────────────────────────────────────────────── */}
+        <nav className="sidebar-nav" aria-label="Sidebar navigation">
+          {/* Section Label */}
+          <p className="sidebar-section-label">Navigation</p>
 
-            return (
-              <li key={link.path}>
-                <Link
-                  to={link.path}
-                  onClick={closeMobileSidebar}
-                  className={`
-                    flex items-center gap-3 px-4 py-3 rounded-lg
-                    transition-all duration-200 font-medium
-                    group relative
-                    ${active
-                      ? 'bg-base-300 text-base-content shadow-inner'
-                      : 'text-base-content/80 hover:bg-base-300 hover:text-base-content'
-                    }
-                  `}
-                >
-                  {/* Icon */}
-                  <Icon className={`
-                    h-5 w-5 transition-transform duration-200
-                    ${active ? 'scale-110' : 'group-hover:scale-105'}
-                  `} />
+          {/* Navigation Items */}
+          <ul className="sidebar-nav-list" role="list">
+            {links.map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.path);
 
-                  {/* Label */}
-                  <span className="flex-1">{link.label}</span>
+              return (
+                <li key={link.path}>
+                  <Link
+                    to={link.path}
+                    onClick={onClose}
+                    aria-current={active ? 'page' : undefined}
+                    className={`sidebar-nav-item ${active ? 'sidebar-nav-item--active' : ''}`}
+                  >
+                    <Icon
+                      className={`sidebar-nav-icon ${active ? 'sidebar-nav-icon--active' : 'sidebar-nav-icon--default'}`}
+                      aria-hidden="true"
+                    />
+                    <span className="flex-1 truncate">{link.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
-                  {/* Active Indicator */}
-                  {active && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="w-2 h-2 bg-base-content rounded-full"></div>
-                    </div>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* User Info - Mobile only */}
-        <div className="lg:hidden mt-auto pt-6 border-t border-base-300">
-          <div className="flex items-center gap-3 px-2">
-            <div className="bg-base-300 rounded-full w-8 h-8 flex items-center justify-center">
-              <span className="text-sm font-medium">
-                {user?.username?.[0]?.toUpperCase()}
-              </span>
+        {/* ── User Profile Footer ───────────────────────────────────────────────── */}
+        <div className="sidebar-user">
+          <div className="sidebar-user-card">
+            {/* Avatar */}
+            <div className="sidebar-avatar" aria-hidden="true">
+              {initials}
             </div>
-            <div>
-              <p className="text-sm font-medium text-base-content">
-                {user?.username}
+
+            {/* User Info */}
+            <div className="min-w-0 flex-1">
+              <p className="sidebar-user-name">
+                {user?.username || 'User'}
               </p>
-              <p className="text-xs text-base-content/60 capitalize">
-                {user?.role}
+              <p className="sidebar-user-role">
+                {user?.role || 'user'}
               </p>
             </div>
           </div>
         </div>
-      </div>
+      </aside>
     </>
   );
 }

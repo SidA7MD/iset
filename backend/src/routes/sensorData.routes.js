@@ -17,5 +17,7 @@ router.post('/ingest', deviceLimiter, deviceDataValidationPOST, sensorDataContro
 router.get('/:MAC/latest', auth, sensorDataController.getLatest);
 router.get('/:MAC/history', auth, sensorDataController.getHistory);
 router.get('/:MAC/stats', auth, sensorDataController.getStatistics);
+router.get('/:MAC/daily', auth, sensorDataController.getDailyAggregation);
+router.get('/:MAC/monthly', auth, sensorDataController.getMonthlyAggregation);
 
 module.exports = router;

@@ -6,8 +6,8 @@ export default function ConfirmDialog({
   onConfirm,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText = 'Confirmer',
+  cancelText = 'Annuler',
   type = 'danger' // 'danger', 'warning', 'info'
 }) {
   if (!isOpen) return null;

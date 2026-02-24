@@ -3,10 +3,10 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import config from '../config';
 import { useAuth } from './AuthContext';
+import { WS_URL } from '../utils/constants';
 
-const WebSocketContext = createContext(null);
+export const WebSocketContext = createContext(null);
 
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
@@ -32,10 +32,10 @@ export const WebSocketProvider = ({ children }) => {
     }
 
     console.log('🔌 Initializing WebSocket connection...');
-    console.log('🔌 Connecting to WebSocket:', config.API_URL);
+    console.log('🔌 Connecting to WebSocket:', WS_URL);
 
     // Initialize socket with current token
-    const socket = io(config.API_URL, {
+    const socket = io(WS_URL, {
       auth: { token: accessToken },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -101,7 +101,7 @@ export const WebSocketProvider = ({ children }) => {
           }
         } catch (refreshError) {
           console.error('❌ Token refresh error:', refreshError);
-          setConnectionError('Authentication failed - please log in again');
+          setConnectionError('Authentification échouée - veuillez vous reconnecter');
         } finally {
           tokenRefreshInProgressRef.current = false;
         }
@@ -156,7 +156,7 @@ export const WebSocketProvider = ({ children }) => {
     // ✅ Reconnection failed
     socket.io.on('reconnect_failed', () => {
       console.error('❌ Reconnection failed after maximum attempts');
-      setConnectionError('Connection lost - please refresh the page');
+      setConnectionError('Connexion perdue - veuillez rafraîchir la page');
     });
 
     // ✅ Generic error handler

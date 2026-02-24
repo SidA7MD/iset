@@ -1,170 +1,156 @@
 // frontend/src/components/common/Navbar.jsx
-import { Activity, Bell, LogOut, Settings, User } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAlerts } from '../../hooks/useAlerts';
+import { LogOut, Menu, Radio, User, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useWebSocket } from '../../hooks/useWebSocket';
 
-export default function Navbar() {
+/**
+ * Navbar — ultra-slim h-12, hairline bottom border, blue brand accent
+ * Props:
+ *   onMenuToggle  – callback to open/close the mobile sidebar
+ *   isMobileOpen  – current open state of the mobile sidebar (for aria-expanded)
+ */
+export default function Navbar({ onMenuToggle, isMobileOpen }) {
   const { user, logout } = useAuth();
-  const { connected } = useWebSocket();
-  const { unacknowledgedCount } = useAlerts();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await logout();
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout failed:', error);
+      // Still navigate to login even if logout API fails
+      navigate('/login', { replace: true });
     }
   };
 
-  const getDashboardPath = () => {
-    if (user?.role === 'admin') return '/admin';
-    if (user?.role === 'operator') return '/operator';
-    return '/dashboard';
-  };
+  const getDashboardPath = () =>
+    user?.role === 'admin' ? '/admin' : '/dashboard';
 
-  const isActivePath = (path) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
+  const initials = user?.username?.[0]?.toUpperCase() || 'U';
 
   return (
-    <div className="navbar bg-base-100 shadow-lg border-b border-base-300 px-4 sm:px-6 lg:px-8">
-      {/* Left Section - Logo & Brand */}
-      <div className="flex-1">
+    <header
+      role="banner"
+      className="h-12 flex items-center bg-base-100 border-b border-base-300 px-3 sm:px-5 flex-shrink-0 z-20"
+    >
+      {/* ── Left: Mobile toggle + Brand ─────────────────────── */}
+      <div className="flex-1 flex items-center gap-2">
+        {/* Mobile sidebar toggle */}
+        <button
+          className="flex items-center justify-center w-8 h-8 rounded-lg text-base-content/60
+                     hover:text-base-content hover:bg-base-200/80 transition-colors duration-150 lg:hidden"
+          onClick={onMenuToggle}
+          aria-label={isMobileOpen ? 'Fermer le menu de navigation' : 'Ouvrir le menu de navigation'}
+          aria-expanded={isMobileOpen}
+          aria-controls="sidebar-nav"
+        >
+          {isMobileOpen ? (
+            <X className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <Menu className="h-4 w-4" aria-hidden="true" />
+          )}
+        </button>
+
+        {/* Brand / Home link */}
         <Link
           to={getDashboardPath()}
-          className="btn btn-ghost normal-case text-xl p-2 sm:p-3 hover:bg-base-200 transition-all duration-200"
+          className="flex items-center gap-2 text-base-content hover:text-base-content/80 transition-colors duration-150"
+          aria-label="ISET⁺ — aller au tableau de bord"
         >
-          <Activity className="h-5 w-5 sm:h-6 sm:w-6 mr-2 flex-shrink-0" />
-          <span className="hidden sm:inline">IoT Monitor</span>
-          <span className="sm:hidden">IoT</span>
+          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600">
+            <Radio className="h-4 w-4 text-white" aria-hidden="true" />
+          </span>
+          <span className="font-semibold text-sm tracking-tight">
+            ISET<sup className="text-[10px] align-super ml-px text-cyan-500">+</sup>
+          </span>
         </Link>
       </div>
 
-      {/* Right Section - Navigation Items */}
-      <div className="flex-none gap-1 sm:gap-2 lg:gap-4">
-        {/* Connection Status */}
-        <div className="hidden sm:flex items-center gap-2">
-          <div
-            className={`badge badge-lg ${connected ? 'badge-success' : 'badge-error'} gap-2 px-3 py-2 transition-all duration-300`}
-            title={connected ? 'WebSocket Connected' : 'WebSocket Disconnected'}
-          >
-            <div className={`w-2 h-2 rounded-full animate-pulse ${connected ? 'bg-white' : 'bg-base-100'}`}></div>
-            <span className="hidden lg:inline">{connected ? 'Live' : 'Offline'}</span>
-            <span className="lg:hidden">{connected ? 'Connected' : 'Offline'}</span>
-          </div>
-        </div>
-
-        {/* Mobile Connection Status */}
-        <div className="sm:hidden tooltip tooltip-bottom" data-tip={connected ? 'Connected' : 'Disconnected'}>
-          <div className={`w-3 h-3 rounded-full ${connected ? 'bg-success' : 'bg-error'} animate-pulse`}></div>
-        </div>
-
-        {/* Notifications */}
-        <div className="indicator">
-          {unacknowledgedCount > 0 && (
-            <span className="indicator-item badge badge-error badge-sm min-w-5 h-5 flex items-center justify-center animate-bounce">
-              {unacknowledgedCount > 99 ? '99+' : unacknowledgedCount}
-            </span>
-          )}
-          <button
-            className="btn btn-ghost btn-circle btn-sm sm:btn-md relative group"
-            title="Notifications"
-          >
-            <Bell className="h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:scale-110" />
-          </button>
-        </div>
-
-        {/* Navigation Links for Larger Screens */}
-        <div className="hidden md:flex items-center gap-1">
-          <Link
-            to="/settings"
-            className={`btn btn-ghost btn-sm gap-2 ${isActivePath('/settings') ? 'btn-active' : ''}`}
-          >
-            <Settings className="h-4 w-4" />
-            <span>Settings</span>
-          </Link>
-          <Link
-            to="/profile"
-            className={`btn btn-ghost btn-sm gap-2 ${isActivePath('/profile') ? 'btn-active' : ''}`}
-          >
-            <User className="h-4 w-4" />
-            <span>Profile</span>
-          </Link>
-        </div>
-
-        {/* User Dropdown */}
+      {/* ── Right: User dropdown ──────────────────────────────── */}
+      <div className="flex items-center gap-2">
         <div className="dropdown dropdown-end">
           <label
             tabIndex={0}
-            className="btn btn-ghost btn-circle avatar placeholder transition-all duration-200 hover:scale-105 focus:scale-105"
-            aria-label="User menu"
+            className="flex items-center justify-center w-9 h-9 rounded-full cursor-pointer
+                       ring-2 ring-cyan-500/40 ring-offset-2 ring-offset-base-100
+                       bg-gradient-to-br from-cyan-500 to-teal-600 text-white font-semibold text-sm
+                       hover:ring-cyan-400 hover:scale-105 transition-all duration-200 shadow-md shadow-cyan-500/20"
+            aria-label={`Menu utilisateur pour ${user?.username || 'Utilisateur'}`}
+            aria-haspopup="true"
           >
-            <div className="bg-primary text-primary-content rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border-2 border-primary/20">
-              <span className="text-sm sm:text-xl font-semibold">
-                {user?.username?.[0]?.toUpperCase() || 'U'}
-              </span>
-            </div>
+            <span aria-hidden="true">{initials}</span>
           </label>
 
           <ul
             tabIndex={0}
-            className="dropdown-content z-[100] mt-3 p-2 shadow-2xl bg-base-100 rounded-box w-72 sm:w-80 border border-base-300 animate-in fade-in-90 zoom-in-95"
+            className="dropdown-content z-[100] mt-3 p-0 bg-white rounded-2xl w-72
+                       border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden"
+            role="menu"
           >
-            {/* User Info Section */}
-            <li className="px-4 py-3 border-b border-base-300">
+            {/* User info header */}
+            <li className="bg-gradient-to-br from-cyan-500 to-teal-600 p-4" role="presentation">
               <div className="flex items-center gap-3">
-                <div className="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">
-                    {user?.username?.[0]?.toUpperCase() || 'U'}
-                  </span>
+                <div className="flex items-center justify-center w-12 h-12 rounded-full
+                                bg-white/20 backdrop-blur-sm text-white font-bold text-lg flex-shrink-0
+                                ring-2 ring-white/30">
+                  <span aria-hidden="true">{initials}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-base-content truncate">
+                  <p className="text-base font-semibold text-white truncate">
                     {user?.username || 'User'}
                   </p>
-                  <p className="text-sm text-base-content/70 truncate">
-                    {user?.email || 'No email'}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="badge badge-sm badge-outline capitalize">
-                      {user?.role || 'user'}
-                    </span>
-                    <div className={`w-2 h-2 rounded-full ${connected ? 'bg-success' : 'bg-error'}`}></div>
-                  </div>
+                  <p className="text-sm text-white/70 truncate">{user?.email || ''}</p>
                 </div>
+              </div>
+              {/* Role badge */}
+              <div className="mt-3">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs uppercase
+                                tracking-wider rounded-full font-semibold
+                                ${user?.role === 'admin' 
+                                  ? 'bg-amber-400 text-amber-900' 
+                                  : 'bg-white/20 text-white backdrop-blur-sm'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${user?.role === 'admin' ? 'bg-amber-700' : 'bg-white/60'}`} />
+                  {user?.role || 'user'}
+                </span>
               </div>
             </li>
 
-            {/* Quick Links */}
-            <li className="md:hidden">
-              <Link to="/profile" className="flex items-center gap-3 py-3 px-4 hover:bg-base-200 transition-colors">
-                <User className="h-4 w-4" />
-                <span>Profile</span>
+            {/* Menu items */}
+            <li className="p-2" role="none">
+              {/* Dashboard shortcut — mobile only */}
+              <Link
+                to={getDashboardPath()}
+                className="flex items-center gap-3 py-2.5 px-3 text-sm text-gray-600
+                           hover:text-gray-900 hover:bg-gray-50 rounded-xl
+                           transition-colors duration-150 md:hidden"
+                role="menuitem"
+              >
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
+                  <User className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                </div>
+                <span className="font-medium">Tableau de bord</span>
               </Link>
-            </li>
-            <li className="md:hidden">
-              <Link to="/settings" className="flex items-center gap-3 py-3 px-4 hover:bg-base-200 transition-colors">
-                <Settings className="h-4 w-4" />
-                <span>Settings</span>
-              </Link>
-            </li>
 
-            {/* Logout */}
-            <li className="border-t border-base-300 mt-1">
+              {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 py-3 px-4 text-error hover:bg-error/10 transition-colors w-full text-left"
+                className="flex items-center gap-3 py-2.5 px-3 text-sm text-rose-600
+                           hover:bg-rose-50 transition-colors duration-150 w-full text-left rounded-xl
+                           group"
+                role="menuitem"
               >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-rose-100 
+                              group-hover:bg-rose-200 transition-colors duration-150">
+                  <LogOut className="h-4 w-4 text-rose-500" aria-hidden="true" />
+                </div>
+                <span className="font-medium">Déconnexion</span>
               </button>
             </li>
           </ul>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

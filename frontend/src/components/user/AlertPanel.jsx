@@ -22,7 +22,7 @@ export default function AlertPanel() {
           <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0 mt-1" />
           <div className="flex-1">
             <h3 className="font-bold text-lg mb-2">
-              Active Alerts ({unacknowledgedCount})
+              Alertes actives ({unacknowledgedCount})
             </h3>
             <div className="space-y-2">
               {unacknowledged.map((alert) => (
@@ -46,7 +46,7 @@ export default function AlertPanel() {
                   <button
                     onClick={() => acknowledgeAlert(alert._id)}
                     className="btn btn-sm btn-ghost gap-1"
-                    title="Acknowledge"
+                    title="Accuser réception"
                   >
                     <CheckCircle className="h-4 w-4" />
                   </button>

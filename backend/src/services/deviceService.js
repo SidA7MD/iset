@@ -10,6 +10,93 @@ class DeviceService {
     return await Device.find().populate('assignedTo', 'username email');
   }
 
+  async createDevice({ MAC, deviceName, location }) {
+    const device = new Device({
+      MAC: MAC.toUpperCase().trim(),
+      deviceName: deviceName?.trim() || null,
+      location: location?.trim() || null,
+    });
+    await device.save();
+    logger.info(`Device created: ${MAC}`);
+    return device;
+  }
+
+  async deleteDevice(MAC) {
+    const device = await Device.findOne({ MAC });
+    if (!device) {
+      throw new NotFoundError('Device not found');
+    }
+
+    // Remove from user's assignedDevices if assigned
+    if (device.assignedTo) {
+      const user = await User.findById(device.assignedTo);
+      if (user) {
+        user.assignedDevices = user.assignedDevices.filter((d) => d !== MAC);
+        await user.save();
+      }
+    }
+
+    await Device.deleteOne({ MAC });
+    logger.info(`Device deleted: ${MAC}`);
+  }
+
+  async assignDeviceToUser(MAC, userId) {
+    const device = await Device.findOne({ MAC });
+    if (!device) {
+      throw new NotFoundError('Device not found');
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Remove from previous user if assigned
+    if (device.assignedTo && device.assignedTo.toString() !== userId) {
+      const previousUser = await User.findById(device.assignedTo);
+      if (previousUser) {
+        previousUser.assignedDevices = previousUser.assignedDevices.filter((d) => d !== MAC);
+        await previousUser.save();
+        logger.info(`Removed device ${MAC} from user ${previousUser.username}`);
+      }
+    }
+
+    // Assign to new user
+    device.assignedTo = userId;
+    await device.save();
+
+    // Add to user's assignedDevices if not already present
+    if (!user.assignedDevices.includes(MAC)) {
+      user.assignedDevices.push(MAC);
+      await user.save();
+    }
+
+    logger.info(`Device ${MAC} assigned to user ${user.username}`);
+    return await Device.findOne({ MAC }).populate('assignedTo', 'username email');
+  }
+
+  async unassignDevice(MAC) {
+    const device = await Device.findOne({ MAC });
+    if (!device) {
+      throw new NotFoundError('Device not found');
+    }
+
+    // Remove from user's assignedDevices
+    if (device.assignedTo) {
+      const user = await User.findById(device.assignedTo);
+      if (user) {
+        user.assignedDevices = user.assignedDevices.filter((d) => d !== MAC);
+        await user.save();
+        logger.info(`Device ${MAC} unassigned from user ${user.username}`);
+      }
+    }
+
+    device.assignedTo = null;
+    await device.save();
+
+    return device;
+  }
+
   async getDeviceByMAC(MAC) {
     const device = await Device.findOne({ MAC }).populate('assignedTo', 'username email');
     if (!device) {

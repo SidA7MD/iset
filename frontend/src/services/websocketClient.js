@@ -61,7 +61,7 @@ class WebSocketClient {
     this.socket.on('connect', () => {
       console.log('✅ WebSocket connected:', this.socket.id);
       this.reconnectAttempts = 0;
-      toast.success('Connected to real-time updates', {
+      toast.success('Connecté aux mises à jour en temps réel', {
         id: 'ws-connect',
         duration: 2000,
       });
@@ -80,9 +80,9 @@ class WebSocketClient {
       // Only show toast if not a manual disconnect
       if (!this.isManualDisconnect) {
         if (reason === 'io server disconnect') {
-          toast.error('Disconnected by server', { id: 'ws-disconnect' });
+          toast.error('Déconnecté par le serveur', { id: 'ws-disconnect' });
         } else if (reason === 'transport close' || reason === 'transport error') {
-          toast.error('Connection lost', { id: 'ws-disconnect' });
+          toast.error('Connexion perdue', { id: 'ws-disconnect' });
         }
       }
     });
@@ -94,7 +94,7 @@ class WebSocketClient {
 
       // Show error toast only after multiple attempts
       if (this.reconnectAttempts >= 3) {
-        toast.error('Unable to connect to server', {
+        toast.error('Impossible de se connecter au serveur', {
           id: 'ws-connect-error',
           duration: 4000,
         });
@@ -119,7 +119,7 @@ class WebSocketClient {
     // Reconnection failed
     this.socket.io.on('reconnect_failed', () => {
       console.error('❌ Reconnection failed after max attempts');
-      toast.error('Failed to reconnect. Please refresh the page.', {
+      toast.error('Reconnexion échouée. Veuillez rafraîchir la page.', {
         id: 'ws-reconnect-failed',
         duration: 0, // Don't auto-dismiss
       });
@@ -128,7 +128,7 @@ class WebSocketClient {
     // Successful reconnection
     this.socket.io.on('reconnect', (attemptNumber) => {
       console.log(`✅ Reconnected after ${attemptNumber} attempts`);
-      toast.success('Reconnected successfully', {
+      toast.success('Reconnecté avec succès', {
         id: 'ws-reconnect',
         duration: 2000,
       });
@@ -139,13 +139,13 @@ class WebSocketClient {
     this.socket.on('error', (error) => {
       console.error('❌ Socket error:', error);
 
-      const errorMsg = error?.message || 'WebSocket error occurred';
+      const errorMsg = error?.message || 'Erreur WebSocket';
 
       // Show user-friendly error messages
       if (errorMsg.includes('expired')) {
-        toast.error('Session expired. Refreshing...', { id: 'ws-error' });
+        toast.error('Session expirée. Actualisation...', { id: 'ws-error' });
       } else if (errorMsg.includes('authentication')) {
-        toast.error('Authentication failed', { id: 'ws-error' });
+        toast.error('Authentification échouée', { id: 'ws-error' });
       } else {
         toast.error(errorMsg, { id: 'ws-error' });
       }

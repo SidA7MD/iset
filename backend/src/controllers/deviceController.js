@@ -17,6 +17,90 @@ class DeviceController {
     }
   }
 
+  async createDevice(req, res, next) {
+    try {
+      const { MAC, deviceName, location } = req.body;
+
+      if (!MAC) {
+        return res.status(400).json({
+          success: false,
+          error: 'MAC address is required',
+        });
+      }
+
+      const device = await deviceService.createDevice({ MAC, deviceName, location });
+
+      res.status(201).json({
+        success: true,
+        message: 'Device created successfully',
+        data: { device },
+      });
+    } catch (error) {
+      if (error.code === 11000) {
+        return res.status(400).json({
+          success: false,
+          error: 'Device with this MAC address already exists',
+        });
+      }
+      next(error);
+    }
+  }
+
+  async deleteDevice(req, res, next) {
+    try {
+      const { MAC } = req.params;
+
+      await deviceService.deleteDevice(MAC);
+
+      res.json({
+        success: true,
+        message: 'Device deleted successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async assignDevice(req, res, next) {
+    try {
+      const { MAC } = req.params;
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'User ID is required',
+        });
+      }
+
+      const device = await deviceService.assignDeviceToUser(MAC, userId);
+
+      res.json({
+        success: true,
+        message: 'Device assigned successfully',
+        data: { device },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async unassignDevice(req, res, next) {
+    try {
+      const { MAC } = req.params;
+
+      const device = await deviceService.unassignDevice(MAC);
+
+      res.json({
+        success: true,
+        message: 'Device unassigned successfully',
+        data: { device },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getMyDevices(req, res, next) {
     try {
       const devices = await deviceService.getUserDevices(req.user.userId);

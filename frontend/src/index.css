@@ -2,22 +2,390 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Global base ─────────────────────────────────────────── */
 @layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     @apply bg-base-100 text-base-content;
   }
+
+  /* Refined scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-base-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-base-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #0891b2;
+  }
 }
 
+/* ── Component utilities ──────────────────────────────────── */
 @layer components {
-  .sensor-card {
-    @apply bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SIDEBAR COMPONENT SYSTEM
+     ═══════════════════════════════════════════════════════════════════════════
+     Design Rationale:
+     - Follows 4px grid system for all spacing decisions
+     - Typography uses Inter with optimized tracking for UI readability
+     - Active states use left indicator + subtle background (no jarring borders)
+     - Consistent opacity scale: 100% → 60% → 40% for text hierarchy
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Sidebar container */
+  .sidebar {
+    @apply w-56 bg-base-200 border-r border-base-300 flex flex-col;
+    @apply transition-transform duration-300 ease-out;
+    @apply fixed top-0 left-0 h-full z-30;
+    @apply lg:sticky lg:top-0 lg:h-screen lg:z-auto lg:flex-shrink-0;
   }
 
-  .sensor-value {
-    @apply text-3xl font-bold;
+  /* Mobile states - controlled by JS */
+  .sidebar--closed {
+    @apply -translate-x-full lg:translate-x-0;
   }
 
-  .alert-badge {
-    @apply badge badge-lg font-semibold;
+  .sidebar--open {
+    @apply translate-x-0;
+  }
+
+  /* Sidebar header/brand area */
+  .sidebar-header {
+    @apply h-14 flex items-center gap-3 px-4 border-b border-base-300 flex-shrink-0;
+  }
+
+  /* Brand logo container */
+  .sidebar-logo {
+    @apply flex items-center justify-center w-8 h-8 rounded-lg;
+    @apply bg-gradient-to-br from-cyan-500 to-cyan-600;
+    @apply shadow-sm;
+  }
+
+  .sidebar-logo-inner {
+    @apply w-2 h-2 rounded-full bg-white/90;
+  }
+
+  /* Brand text styling */
+  .sidebar-brand-text {
+    @apply text-sm font-semibold text-base-content tracking-tight leading-tight;
+  }
+
+  .sidebar-brand-badge {
+    @apply text-[10px] font-semibold text-cyan-600 ml-0.5;
+  }
+
+  .sidebar-brand-subtitle {
+    @apply text-[11px] font-medium text-base-content/50 uppercase tracking-wide;
+  }
+
+  /* Navigation area */
+  .sidebar-nav {
+    @apply flex-1 overflow-y-auto px-3 py-4;
+  }
+
+  /* Section label — refined uppercase label */
+  .sidebar-section-label {
+    @apply text-[11px] font-medium uppercase tracking-wide text-base-content/40 px-3 mb-2;
+  }
+
+  /* Navigation list */
+  .sidebar-nav-list {
+    @apply space-y-1;
+  }
+
+  /* Navigation item — base state */
+  .sidebar-nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg;
+    @apply text-[13px] font-medium text-base-content/60;
+    @apply transition-all duration-150 ease-out;
+    @apply relative;
+    /* Focus ring for accessibility */
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 focus-visible:ring-offset-1;
+  }
+
+  /* Navigation item — hover state */
+  .sidebar-nav-item:hover:not(.sidebar-nav-item--active) {
+    @apply bg-base-300/40 text-base-content/80;
+  }
+
+  /* Navigation item — active state 
+     Design: Left indicator bar + subtle background fill
+     No border-l hack that causes alignment issues */
+  .sidebar-nav-item--active {
+    @apply bg-cyan-500/10 text-cyan-600 font-medium;
+  }
+
+  .sidebar-nav-item--active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 -translate-y-1/2;
+    @apply w-[3px] h-5 rounded-r-full bg-cyan-600;
+  }
+
+  /* Navigation icon */
+  .sidebar-nav-icon {
+    @apply w-[18px] h-[18px] flex-shrink-0;
+  }
+
+  .sidebar-nav-icon--default {
+    @apply text-base-content/40;
+  }
+
+  .sidebar-nav-icon--active {
+    @apply text-cyan-600;
+  }
+
+  /* User profile section */
+  .sidebar-user {
+    @apply px-3 py-3 border-t border-base-300 flex-shrink-0;
+  }
+
+  .sidebar-user-card {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg;
+    @apply bg-base-300/30 transition-colors duration-150;
+    @apply hover:bg-base-300/50;
+  }
+
+  /* Avatar */
+  .sidebar-avatar {
+    @apply flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0;
+    @apply bg-gradient-to-br from-cyan-500 to-cyan-600;
+    @apply text-white text-xs font-semibold;
+    @apply shadow-sm;
+  }
+
+  /* User info text */
+  .sidebar-user-name {
+    @apply text-[13px] font-medium text-base-content truncate;
+  }
+
+  .sidebar-user-role {
+    @apply text-[11px] font-medium text-base-content/50 uppercase tracking-wide truncate;
+  }
+
+  /* Mobile backdrop */
+  .sidebar-backdrop {
+    @apply fixed inset-0 bg-black/50 z-20 lg:hidden;
+    @apply backdrop-blur-[2px];
+  }
+
+  /* Metric card — large display number cards */
+  .metric-card {
+    @apply bg-base-200 border border-base-300 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Section label — uppercase tracking label above sections */
+  .section-label {
+    @apply text-[11px] font-medium uppercase tracking-wider text-base-content/40;
+  }
+
+  /* Input field — standard form inputs */
+  .input-field {
+    @apply w-full bg-base-200 border border-base-300 rounded-lg px-3 py-2 text-sm text-base-content placeholder:text-base-content/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/60 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Primary button */
+  .btn-primary-custom {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-cyan-600 text-white hover:bg-cyan-500 active:scale-[0.97] transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-base-100 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Ghost/text button */
+  .btn-ghost-custom {
+    @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-base-content/60 hover:text-base-content hover:bg-base-200/80 active:scale-[0.97] transition-all duration-150;
+  }
+
+  /* Destructive outlined button */
+  .btn-danger-custom {
+    @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-red-500/40 text-red-400 hover:bg-red-500/10 active:scale-[0.97] transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg,
+        theme('colors.base-200') 0%,
+        theme('colors.base-300') 50%,
+        theme('colors.base-200') 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     FORM COMPONENTS
+     ═══════════════════════════════════════════════════════════════════════════
+     Enterprise-grade form inputs with consistent styling and accessibility
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Form input — unified input styling */
+  .form-input {
+    @apply w-full h-11 pl-10 pr-4 rounded-lg text-sm;
+    @apply bg-base-100 border border-base-300 text-base-content;
+    @apply placeholder:text-base-content/35;
+    @apply transition-all duration-150;
+    @apply focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-base-200;
+  }
+
+  .form-input--error {
+    @apply border-red-400 focus:ring-red-500/30 focus:border-red-500/50;
+  }
+
+  /* Primary Button — main actions */
+  .btn-primary {
+    @apply h-11 px-5 rounded-lg text-sm font-medium;
+    @apply bg-cyan-600 text-white;
+    @apply hover:bg-cyan-500;
+    @apply transition-all duration-150;
+    @apply focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-base-100;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply active:scale-[0.98];
+  }
+
+  /* Secondary Button — cancel/secondary actions */
+  .btn-secondary {
+    @apply h-11 px-5 rounded-lg text-sm font-medium;
+    @apply bg-base-200 text-base-content/70 border border-base-300;
+    @apply hover:bg-base-300 hover:text-base-content;
+    @apply transition-all duration-150;
+    @apply focus:outline-none focus:ring-2 focus:ring-base-300 focus:ring-offset-2 focus:ring-offset-base-100;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply active:scale-[0.98];
+  }
+
+  /* Role Selection Cards */
+  .role-card {
+    @apply flex items-center gap-3 p-3 rounded-xl;
+    @apply border-2 border-base-300 bg-base-100;
+    @apply transition-all duration-150 cursor-pointer;
+    @apply hover:border-cyan-300 hover:bg-cyan-500/5;
+    @apply focus:outline-none focus:ring-2 focus:ring-cyan-500/30;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .role-card--selected {
+    @apply border-cyan-500 bg-cyan-500/5;
+    @apply hover:border-cyan-500 hover:bg-cyan-500/5;
+  }
+
+  .role-card-icon {
+    @apply w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0;
+    @apply bg-base-200 text-base-content/50;
+    @apply transition-colors duration-150;
+  }
+
+  .role-card-icon--selected {
+    @apply bg-cyan-600 text-white;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     DEVICE ASSIGNMENT COMPONENTS
+     ═══════════════════════════════════════════════════════════════════════════
+     Tag-style device chips with inline add functionality
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Device input container — wraps chips and input */
+  .device-input-container {
+    @apply flex items-center gap-2 p-2 rounded-xl;
+    @apply border-2 border-base-300 bg-base-100;
+    @apply focus-within:border-cyan-500/50 focus-within:ring-2 focus-within:ring-cyan-500/20;
+    @apply transition-all duration-150;
+  }
+
+  /* Chips wrapper — scrollable container for device chips */
+  .device-chips-wrapper {
+    @apply flex flex-wrap items-center gap-1.5 flex-1 min-w-0;
+  }
+
+  /* Device input field */
+  .device-input {
+    @apply flex-1 min-w-[100px] h-8 px-2 text-sm;
+    @apply bg-transparent text-base-content;
+    @apply placeholder:text-base-content/35;
+    @apply focus:outline-none;
+    @apply disabled:cursor-not-allowed;
+  }
+
+  /* Add button */
+  .device-add-btn {
+    @apply w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0;
+    @apply bg-cyan-600 text-white;
+    @apply hover:bg-cyan-700;
+    @apply transition-all duration-150;
+    @apply disabled:opacity-30 disabled:cursor-not-allowed;
+    @apply active:scale-95;
+  }
+
+  /* Device chip */
+  .device-chip {
+    @apply inline-flex items-center gap-1.5 h-7 pl-2 pr-1 rounded-md;
+    @apply bg-base-200 text-base-content/70 text-xs font-medium;
+    @apply border border-base-300;
+    @apply transition-all duration-150;
+  }
+
+  .device-chip--new {
+    @apply bg-emerald-500/10 text-emerald-600 border-emerald-500/30;
+  }
+
+  .device-chip-remove {
+    @apply w-5 h-5 rounded flex items-center justify-center;
+    @apply text-base-content/40 hover:text-red-500 hover:bg-red-500/10;
+    @apply transition-colors duration-150;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .device-chip--new .device-chip-remove {
+    @apply text-emerald-600/60 hover:text-red-500 hover:bg-red-500/10;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     USER SELECT COMPONENTS
+     ═══════════════════════════════════════════════════════════════════════════
+     Selectable user cards for assignment modals
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  .user-select-card {
+    @apply w-full flex items-center gap-3 p-3 rounded-xl;
+    @apply bg-base-100 border border-base-300;
+    @apply transition-all duration-150 cursor-pointer;
+    @apply hover:border-cyan-300 hover:bg-cyan-500/5;
+    @apply focus:outline-none focus:ring-2 focus:ring-cyan-500/30;
+  }
+
+  .user-select-card--selected {
+    @apply border-cyan-500 bg-cyan-500/5;
+  }
+
+  .user-select-avatar {
+    @apply w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0;
+    @apply bg-base-200 text-base-content/60 text-sm font-semibold;
+    @apply transition-colors duration-150;
+  }
+
+  .user-select-avatar--selected {
+    @apply bg-cyan-600 text-white;
+  }
+}
+
+/* ── Keyframes ────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
   }
 }

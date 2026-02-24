@@ -1,10 +1,11 @@
 // frontend/src/components/user/DeviceDashboard.jsx
 // Updated dashboard component with proper real-time handling and responsive design
 
-import { Activity, AlertTriangle } from 'lucide-react';
+import { Activity, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { deviceApi } from '../../api/deviceApi';
+import { sensorDataApi } from '../../api/sensorDataApi';
 import { useDeviceData } from '../../hooks/useDeviceData';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -14,8 +15,8 @@ export default function DeviceDashboard() {
   const [devices, setDevices] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { getDeviceData } = useDeviceData();
-  const { socket, isConnected, isReady } = useWebSocket();
+  const { getDeviceData, setDeviceData, isDeviceOnline } = useDeviceData();
+  const { socket, isConnected } = useWebSocket();
 
   // Fetch devices on mount
   useEffect(() => {
@@ -24,7 +25,7 @@ export default function DeviceDashboard() {
 
   // Setup WebSocket listeners when socket is ready
   useEffect(() => {
-    if (!isReady || !socket) {
+    if (!isConnected || !socket) {
       console.log('⏳ Waiting for WebSocket to be ready...');
       return;
     }
@@ -32,17 +33,17 @@ export default function DeviceDashboard() {
     console.log('🎯 Setting up WebSocket listeners for DeviceDashboard');
 
     // Listen for alerts
-    const unsubAlerts = socket.on('device:alert', (alert) => {
+    const handleAlert = (alert) => {
       console.log('⚠️ Alert received:', alert);
       setAlerts((prev) => [alert, ...prev].slice(0, 10));
-      toast.error(`Alert: ${alert.message}`, {
+      toast.error(`Alerte : ${alert.message}`, {
         duration: 5000,
         icon: '⚠️',
       });
-    });
+    };
 
     // Listen for device status changes
-    const unsubStatus = socket.on('device:status', (data) => {
+    const handleStatus = (data) => {
       console.log('🔄 Device status changed:', data);
       setDevices((prev) =>
         prev.map((device) =>
@@ -51,41 +52,40 @@ export default function DeviceDashboard() {
             : device
         )
       );
-    });
+    };
 
     // Listen for device assignment changes
-    const unsubAssignment = socket.on('user:device-assigned', (data) => {
+    const handleAssignment = (data) => {
       console.log('➕ New device assigned:', data);
       fetchDevices(); // Refresh device list
-    });
+    };
+
+    socket.on('device:alert', handleAlert);
+    socket.on('device:status', handleStatus);
+    socket.on('user:device-assigned', handleAssignment);
 
     // Cleanup all listeners on unmount
     return () => {
       console.log('🧹 Cleaning up DeviceDashboard WebSocket listeners');
-      unsubAlerts();
-      unsubStatus();
-      unsubAssignment();
+      socket.off('device:alert', handleAlert);
+      socket.off('device:status', handleStatus);
+      socket.off('user:device-assigned', handleAssignment);
     };
-  }, [isReady, socket]);
+  }, [isConnected, socket]);
 
   // Subscribe to devices when they are loaded and socket is ready
   useEffect(() => {
-    if (!isReady || !socket || devices.length === 0) {
+    if (!isConnected || !socket || devices.length === 0) {
       return;
     }
 
     console.log('📡 Subscribing to devices...');
 
-    // Subscribe to each device
     devices.forEach((device) => {
-      const success = socket.subscribeToDevice(device.MAC);
-      if (success) {
-        console.log(`🔔 Subscribed to device: ${device.MAC}`);
-      } else {
-        console.warn(`⚠️ Failed to subscribe to device: ${device.MAC}`);
-      }
+      console.log(`🔔 Subscribing to device: ${device.MAC}`);
+      socket.emit('device:subscribe', { MAC: device.MAC });
     });
-  }, [devices, isReady, socket]);
+  }, [devices, isConnected, socket]);
 
   const fetchDevices = async () => {
     try {
@@ -94,115 +94,162 @@ export default function DeviceDashboard() {
       const fetchedDevices = response.data.devices;
       setDevices(fetchedDevices);
       console.log(`✅ Loaded ${fetchedDevices.length} devices`);
+
+      // Fetch latest sensor data for each device
+      const latestDataPromises = fetchedDevices.map(async (device) => {
+        try {
+          const latestResponse = await sensorDataApi.getLatest(device.MAC);
+          if (latestResponse.data) {
+            setDeviceData(device.MAC, latestResponse.data);
+            console.log(`📊 Loaded latest data for ${device.MAC}`);
+          }
+        } catch (error) {
+            // Device may not have any data yet, this is fine
+            console.log(`ℹ️ No data yet for ${device.MAC}`);
+        }
+      });
+
+      await Promise.all(latestDataPromises);
     } catch (error) {
       console.error('Error fetching devices:', error);
-      toast.error('Failed to load devices');
+      toast.error('Échec du chargement des appareils');
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading devices..." />;
+    return <LoadingSpinner message="Chargement des appareils..." />;
   }
 
   const onlineDevices = devices.filter((d) => {
+    // Use the isDeviceOnline function from hook or check lastSeen
+    if (isDeviceOnline(d.MAC)) return true;
+    
     const data = getDeviceData(d.MAC);
-    if (!data) return false;
-    const age = Date.now() - new Date(data.timestamp).getTime();
-    return age < 5 * 60 * 1000; // Online if data within last 5 minutes
+    if (data?.timestamp) {
+      const age = Date.now() - new Date(data.timestamp).getTime();
+      return age < 5 * 60 * 1000;
+    }
+    
+    // Fall back to device lastSeen from database
+    if (d.lastSeen) {
+      const age = Date.now() - new Date(d.lastSeen).getTime();
+      return age < 5 * 60 * 1000;
+    }
+    
+    return false;
   }).length;
 
+  const metricCards = [
+    {
+      icon: Activity,
+      iconColor: 'text-cyan-400',
+      iconBg: 'bg-cyan-500/10',
+      label: 'Total des appareils',
+      value: devices.length,
+      sub: 'Assignés à vous',
+      subColor: 'text-base-content/40',
+    },
+    {
+      icon: Wifi,
+      iconColor: 'text-emerald-400',
+      iconBg: 'bg-emerald-500/10',
+      label: 'En ligne',
+      value: onlineDevices,
+      sub: 'Connexions actives',
+      subColor: 'text-emerald-400',
+    },
+    {
+      icon: AlertTriangle,
+      iconColor: 'text-amber-400',
+      iconBg: 'bg-amber-500/10',
+      label: 'Alertes actives',
+      value: alerts.length,
+      sub: alerts.length > 0 ? 'Nécessite attention' : 'Tout est normal',
+      subColor: alerts.length > 0 ? 'text-amber-400' : 'text-emerald-400',
+    },
+  ];
+
   return (
-    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Device Dashboard</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">
-              Real-time monitoring of your assigned devices
-            </p>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-semibold text-base-content tracking-tight">Tableau de bord des appareils</h1>
+          <p className="text-sm text-base-content/40 mt-0.5">
+            Surveillance en temps réel de vos appareils assignés
+          </p>
+        </div>
 
-          {/* Connection Status Indicator */}
-          <div className="flex items-center gap-2 mt-2 sm:mt-0">
-            <div
-              className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success animate-pulse' : 'bg-error'}`}
-            ></div>
-            <span className="text-xs sm:text-sm text-gray-500">
-              {isConnected ? 'Real-time updates active' : 'Connecting...'}
-            </span>
-          </div>
+        {/* Connection Status */}
+        <div className="flex items-center gap-2">
+          {isConnected ? (
+            <Wifi className="h-3.5 w-3.5 text-emerald-400" />
+          ) : (
+            <WifiOff className="h-3.5 w-3.5 text-base-content/30" />
+          )}
+          <span className={`text-xs ${isConnected ? 'text-emerald-400' : 'text-base-content/30'}`}>
+            {isConnected ? 'Mises à jour en direct' : 'Connexion…'}
+          </span>
+          {isConnected && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          )}
         </div>
       </div>
 
-      {/* Stats - Responsive Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-        {/* Total Devices Stat */}
-        <div className="stat bg-base-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
-          <div className="stat-figure text-primary">
-            <Activity className="h-6 w-6 sm:h-8 sm:w-8" />
-          </div>
-          <div className="stat-title text-sm sm:text-base">Total Devices</div>
-          <div className="stat-value text-lg sm:text-2xl md:text-3xl text-primary">{devices.length}</div>
-          <div className="stat-desc text-xs sm:text-sm">Assigned to you</div>
-        </div>
-
-        {/* Online Devices Stat */}
-        <div className="stat bg-base-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
-          <div className="stat-figure text-success">
-            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-success animate-pulse"></div>
-          </div>
-          <div className="stat-title text-sm sm:text-base">Online</div>
-          <div className="stat-value text-lg sm:text-2xl md:text-3xl text-success">{onlineDevices}</div>
-          <div className="stat-desc text-xs sm:text-sm">Active connections</div>
-        </div>
-
-        {/* Active Alerts Stat */}
-        <div className="stat bg-base-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
-          <div className="stat-figure text-warning">
-            <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8" />
-          </div>
-          <div className="stat-title text-sm sm:text-base">Active Alerts</div>
-          <div className="stat-value text-lg sm:text-2xl md:text-3xl text-warning">{alerts.length}</div>
-          <div className="stat-desc text-xs sm:text-sm">Requiring attention</div>
-        </div>
-      </div>
-
-      {/* Active Alerts */}
-      {alerts.length > 0 && (
-        <div className="alert alert-warning shadow-lg rounded-xl sm:rounded-2xl">
-          <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-              <div>
-                <h3 className="font-bold text-sm sm:text-base">Active Alerts ({alerts.length})</h3>
-                <div className="text-xs sm:text-sm">
-                  Latest: {alerts[0].message} - {alerts[0].MAC}
+      {/* Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {metricCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <div key={card.label} className="metric-card">
+              <div className="flex items-start justify-between mb-3">
+                <div className={`w-8 h-8 rounded-lg ${card.iconBg} flex items-center justify-center`}>
+                  <Icon className={`h-4 w-4 ${card.iconColor}`} />
                 </div>
               </div>
-              <button
-                className="btn btn-sm btn-warning mt-2 sm:mt-0"
-                onClick={() => setAlerts([])}
-              >
-                Clear All
-              </button>
+              <div className="text-3xl font-bold text-base-content tracking-tight">{card.value}</div>
+              <div className="section-label mt-2">{card.label}</div>
+              <div className={`text-xs mt-1 ${card.subColor}`}>{card.sub}</div>
             </div>
+          );
+        })}
+      </div>
+
+      {/* Active Alerts banner */}
+      {alerts.length > 0 && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/20
+                        bg-amber-500/8 text-amber-300">
+          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Alertes actives ({alerts.length})</p>
+            <p className="text-xs text-amber-300/70 mt-0.5 truncate">
+              Dernière : {alerts[0].message} — {alerts[0].MAC}
+            </p>
           </div>
+          <button
+            onClick={() => setAlerts([])}
+            className="text-xs text-amber-300/60 hover:text-amber-300 transition-colors"
+          >
+            Tout ignorer
+          </button>
         </div>
       )}
 
       {/* Devices Grid */}
       {devices.length === 0 ? (
-        <div className="text-center py-8 sm:py-12 bg-base-100 rounded-xl sm:rounded-2xl shadow-lg">
-          <p className="text-gray-500 text-lg sm:text-xl">No devices assigned to you</p>
-          <p className="text-gray-400 text-sm sm:text-base mt-2">
-            Contact your administrator to get devices assigned
+        <div className="text-center py-16 bg-base-200 border border-base-300 rounded-xl">
+          <div className="w-12 h-12 rounded-xl bg-base-300 flex items-center justify-center mx-auto mb-3">
+            <Activity className="h-6 w-6 text-base-content/20" />
+          </div>
+          <p className="text-sm font-medium text-base-content/50">Aucun appareil assigné</p>
+          <p className="text-xs text-base-content/30 mt-1">
+            Contactez votre administrateur pour obtenir des appareils
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {devices.map((device) => (
             <DeviceCard key={device.MAC} device={device} />
           ))}

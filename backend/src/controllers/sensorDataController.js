@@ -21,6 +21,12 @@ class SensorDataController {
       // Broadcast to WebSocket clients
       websocketService.broadcastSensorData(MAC, result.sensorData);
 
+      // Broadcast device online status
+      websocketService.broadcastDeviceStatus(MAC, {
+        isOnline: true,
+        lastSeen: result.device.lastSeen,
+      });
+
       // Broadcast alerts if any
       if (result.alerts.length > 0) {
         result.alerts.forEach((alert) => {
@@ -95,6 +101,49 @@ class SensorDataController {
       res.json({
         success: true,
         data: { stats },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getDailyAggregation(req, res, next) {
+    try {
+      const { MAC } = req.params;
+      const { start, end } = req.query;
+
+      const data = await sensorDataService.getDailyAggregation(
+        MAC,
+        req.user.userId,
+        req.user.role,
+        start,
+        end
+      );
+
+      res.json({
+        success: true,
+        data: { daily: data },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMonthlyAggregation(req, res, next) {
+    try {
+      const { MAC } = req.params;
+      const { year } = req.query;
+
+      const data = await sensorDataService.getMonthlyAggregation(
+        MAC,
+        req.user.userId,
+        req.user.role,
+        parseInt(year) || new Date().getFullYear()
+      );
+
+      res.json({
+        success: true,
+        data: { monthly: data },
       });
     } catch (error) {
       next(error);
