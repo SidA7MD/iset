@@ -8,27 +8,29 @@ const connectDB = async () => {
     const options = {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      family: 4, // Force IPv4
     };
 
-    console.log('🔗 Attempting to connect to MongoDB Atlas...');
     await mongoose.connect(config.mongodb.uri, options);
-    console.log('✅ MongoDB connected successfully');
+
+    logger.info('MongoDB connected successfully');
 
     // Clean up old indexes after connection
-    cleanupOldIndexes().catch(err => console.warn('Index cleanup warning:', err.message));
+    await cleanupOldIndexes();
 
     mongoose.connection.on('error', (err) => {
-      console.error('❌ MongoDB connection error:', err);
+      logger.error('MongoDB connection error:', err);
     });
 
     mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️ MongoDB disconnected. Reconnect attempted...');
+      logger.warn('MongoDB disconnected. Attempting to reconnect...');
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      logger.info('MongoDB reconnected');
     });
   } catch (error) {
-    console.error('❌ MongoDB connection FAILED:', error.message);
-    console.info('ℹ️ Server will continue to run for diagnostics.');
-    // DO NOT EXIT - Keep server alive for health checks and debug endpoints
+    logger.error('MongoDB connection failed:', error.message);
+    process.exit(1);
   }
 };
 

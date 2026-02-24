@@ -65,20 +65,7 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
-});
-
-// Debug endpoint for deployment issues
-app.get('/api/debug', (req, res) => {
-  const mongoose = require('mongoose');
-  res.json({
-    status: 'up',
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    env: process.env.NODE_ENV,
-    allowedOrigins: config.cors.allowedOrigins,
-    headers: req.headers,
-    url: req.url
-  });
+  res.json({ status: 'ok' });
 });
 
 // API
@@ -90,20 +77,7 @@ app.use('/api/alerts', alertRoutes);
 
 // 404 fallback
 app.use((req, res) => {
-  console.log(`[404] Not Found: ${req.method} ${req.url}`);
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.url,
-    method: req.method
-  });
+  res.status(404).json({ error: 'Route not found' });
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('[Global Error Path]:', req.path);
-  console.error('[Error Detail]:', err);
-  res.status(err.status || 500).json({
-    success: false,
-    error: err.message || 'Internal Server Error'
-  });
-});
+module.exports = app;
