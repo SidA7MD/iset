@@ -3,6 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
+const config = require('./config/env');
+const logger = require('./utils/logger');
 
 // Routes
 const authRoutes = require('./routes/auth.routes');
@@ -16,29 +18,37 @@ const app = express();
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowed = config.cors.allowedOrigins;
+    // If no origin (like mobile apps or curl), allow it
+    if (!origin) return callback(null, true);
 
-    // Check if origin is allowed or if it represents a non-browser request (no origin)
-    if (!origin || allowed === '*' || allowed.includes(origin)) {
-      if (origin) console.log(`✅ CORS check passed for origin: ${origin}`);
+    const allowed = config.cors.allowedOrigins;
+    console.log(`🔍 Incoming request from origin: ${origin}`);
+    console.log(`📋 Allowed origins: ${JSON.stringify(allowed)}`);
+
+    if (allowed === '*' || (Array.isArray(allowed) && allowed.includes(origin))) {
+      console.log(`✅ CORS check passed for: ${origin}`);
+      return callback(null, true);
+    }
+
+    // Try a looser check for subdomains or trailing slashes if exact match fails
+    const cleanOrigin = origin.replace(/\/$/, "");
+    if (Array.isArray(allowed) && allowed.some(a => a.replace(/\/$/, "") === cleanOrigin)) {
+      console.log(`✅ CORS check passed (approximate match) for: ${origin}`);
       return callback(null, true);
     }
 
     console.warn(`❌ CORS check FAILED for origin: ${origin}`);
-    console.info(`Allowed origins are: ${JSON.stringify(allowed)}`);
-    return callback(new Error('Blocked by CORS'));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   preflightContinue: false,
   optionsSuccessStatus: 204,
 };
 
 // Apply CORS middleware first
 app.use(cors(corsOptions));
-
-// Handle OPTIONS preflight explicitly if needed (redundant with cors middleware but safer)
 app.options('*', cors(corsOptions));
 
 app.use(helmet());
