@@ -19,9 +19,12 @@ module.exports = {
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'production',
 
-  mongodb: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/iot_monitoring',
-  },
+ mongodb: {
+  uri:
+    process.env.MONGO_URI ||
+    process.env.MONGODB_URI ||
+    'mongodb://127.0.0.1:27017/iset_DB',
+},
 
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET,
