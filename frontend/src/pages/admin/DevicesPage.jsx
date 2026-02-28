@@ -15,6 +15,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { deviceApi } from '../../api/deviceApi';
 import { userApi } from '../../api/userApi';
@@ -27,7 +28,8 @@ export default function DevicesPage() {
   const [devices, setDevices] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [assignDevice, setAssignDevice] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);

@@ -21,15 +21,16 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { deviceApi } from '../../api/deviceApi';
 import { sensorDataApi } from '../../api/sensorDataApi';
+import ExportModal from '../../components/common/ExportModal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EvolutionChart from '../../components/user/EvolutionChart';
 import HistoricalChart from '../../components/user/HistoricalChart';
 import { useDeviceData } from '../../hooks/useDeviceData';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { downloadCSV, formatTimestamp, timeAgo } from '../../utils/helpers';
+import { formatTimestamp, timeAgo } from '../../utils/helpers';
 
 // ── Shared sub-components ──────────────────────────────────────
 function Panel({ children, className = '' }) {
@@ -52,6 +53,9 @@ function StatRow({ label, value, accent }) {
 // ── Main component ─────────────────────────────────────────────
 export default function DeviceDetailsPage() {
   const { MAC } = useParams();
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const backPath = isAdminRoute ? '/admin' : '/dashboard';
   const [device, setDevice] = useState(null);
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
@@ -72,6 +76,7 @@ export default function DeviceDetailsPage() {
   const [archiveHistory, setArchiveHistory] = useState([]);
   const [archiveStats, setArchiveStats] = useState(null);
   const [archiveLoading, setArchiveLoading] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   const { getDeviceData, setDeviceData } = useDeviceData();
   const { socket, isConnected } = useWebSocket();
@@ -215,15 +220,7 @@ export default function DeviceDetailsPage() {
 
   const handleExport = () => {
     if (history.length === 0) { toast.error('Aucune donnée à exporter'); return; }
-    const exportData = history.map(r => ({
-      MAC: r.MAC,
-      Temperature: r.temp || r.temperature,
-      Humidity: r.hmdt || r.humidity,
-      Gas: r.gaz || r.gas,
-      Timestamp: formatTimestamp(r.timestamp),
-    }));
-    downloadCSV(exportData, `${MAC}_data_${new Date().toISOString().split('T')[0]}`);
-    toast.success('Données exportées avec succès');
+    setShowExportModal(true);
   };
 
   const isOnline = () => {
@@ -243,7 +240,7 @@ export default function DeviceDetailsPage() {
           <p className="text-sm text-base-content/40 mt-1 mb-6">
             L'appareil <code className="font-mono text-cyan-400">{MAC}</code> n'a pas pu être localisé.
           </p>
-          <Link to="/dashboard" className="btn-ghost-custom text-sm">
+          <Link to={backPath} className="btn-ghost-custom text-sm">
             <ArrowLeft className="h-4 w-4" /> Retour au Tableau de bord
           </Link>
         </div>
@@ -312,7 +309,7 @@ export default function DeviceDetailsPage() {
           {/* Left: back + title */}
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              to="/dashboard"
+              to={backPath}
               className="flex items-center justify-center w-8 h-8 rounded-lg bg-base-300/60
                          text-base-content/60 hover:text-base-content hover:bg-base-300
                          transition-colors duration-150 flex-shrink-0"
@@ -343,6 +340,7 @@ export default function DeviceDetailsPage() {
             <button
               onClick={handleExport}
               className="btn-ghost-custom text-xs px-3 py-1.5"
+              title="Exporter les données"
             >
               <Download className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Exporter</span>
@@ -689,6 +687,15 @@ export default function DeviceDetailsPage() {
         </div>
       )}
 
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        device={device}
+        readings={history}
+        stats={stats}
+        timeRange={timeRange}
+      />
     </div>
   );
 }

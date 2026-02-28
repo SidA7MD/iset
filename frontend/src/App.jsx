@@ -28,6 +28,7 @@ function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="devices" element={<DevicesPage />} />
+        <Route path="devices/:MAC" element={<DeviceDetailsPage />} />
       </Route>
 
       {/* User Routes */}

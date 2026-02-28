@@ -1,14 +1,14 @@
 // frontend/src/utils/constants.js
 
 /**
- * API Base URL
+ * API Base URL - uses the browser's hostname so it works via localhost and LAN IP
  */
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3000/api`;
 
 /**
  * WebSocket URL
  */
-export const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
+export const WS_URL = import.meta.env.VITE_WS_URL || `http://${window.location.hostname}:3000`;
 
 /**
  * User roles

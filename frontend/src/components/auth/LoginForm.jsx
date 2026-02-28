@@ -93,9 +93,6 @@ export default function LoginForm() {
           {/* Background Image */}
           <div 
             className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: `url('https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80')`,
-            }}
           />
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/80 via-cyan-700/70 to-cyan-800/80" />

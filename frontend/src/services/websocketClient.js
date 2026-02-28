@@ -2,8 +2,8 @@
 import toast from 'react-hot-toast';
 import { io } from 'socket.io-client';
 
-// Get WebSocket URL from environment or default
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Get WebSocket URL from environment or default - uses browser hostname for LAN support
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3000`;
 // Remove /api suffix if present for WebSocket connection
 const WS_URL = API_URL.replace('/api', '');
 
